@@ -244,7 +244,7 @@ export default function App() {
   };
   const go = (next: View) => { setView(next); setMenuOpen(false); };
   const pageName = view === "greenhouse" ? text(language, "温室", "Greenhouse") : view === "garden" ? text(language, "成长温室", "Growth Greenhouse") : view === "rewards" ? text(language, "奖励架", "Reward Shelf") : text(language, "数据源设置", "Data Source");
-  const pageTitle = view === "greenhouse" ? text(language, "今天，也在生长", "Growing, one day at a time") : view === "garden" ? text(language, "完成的，也会留下", "What you finish stays with you") : view === "rewards" ? text(language, "把期待放在这里", "Give your progress somewhere to go") : text(language, "连接你的时间", "Connect your time");
+  const pageTitle = view === "greenhouse" ? text(language, "今天，也在生长", "Growing, one day at a time") : view === "garden" ? text(language, "成长温室", "Growth Greenhouse") : view === "rewards" ? text(language, "把期待放在这里", "Give your progress somewhere to go") : text(language, "连接你的时间", "Connect your time");
 
   return <LanguageContext.Provider value={language}><div className="app-shell">
     <aside className="sidebar"><div className="brand"><div className="brand-mark"><Sprout size={20} /></div><div><strong>Growth Greenhouse</strong><span>LEARNING SPACE</span></div></div>

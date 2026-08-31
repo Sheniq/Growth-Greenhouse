@@ -303,3 +303,12 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
   .completed-plant-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .garden-detail { grid-template-columns: 1fr; }.garden-detail-plant { display: none; }
 }
+
+.settings-wrapper { width: 100%; }
+.settings-sync-strip { display: flex; align-items: center; gap: 11px; margin: 0 0 13px; padding: 10px 13px; color: #4f7656; background: #f5faed; border: 1px solid #dcebcf; border-radius: 9px; }
+.settings-sync-strip i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #b2c4a5; box-shadow: 0 0 0 4px #e0edd4; }
+.settings-sync-strip i.online { background: var(--app-growth); box-shadow: 0 0 0 4px #d2efd0; }
+.settings-sync-strip strong, .settings-sync-strip span { display: block; }
+.settings-sync-strip strong { color: #477451; font-size: 11px; }
+.settings-sync-strip span { margin-top: 3px; color: #789479; font-size: 10px; }
+.settings-wrapper > .settings-page > .settings-panel > .settings-state { display: none; }
