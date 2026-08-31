@@ -1,80 +1,79 @@
-<div align="center">
-
 # Growth Greenhouse
 
-Turn the time you choose to spend learning into a growing place of your own.
+把你愿意投入学习的时间，变成一座会持续成长的空间。
 
-**Temporary English name:** Growth Greenhouse
+**临时英文名：** Growth Greenhouse（成长温室）
 
-[简体中文](README.zh-CN.md)
+[English](README.en.md)
 
-![Platform](https://img.shields.io/badge/platform-Windows-4f6f8f)
-![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-4f7f8f)
-![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-3178c6)
-![Backend](https://img.shields.io/badge/backend-Rust-b7410e)
-[![License](https://img.shields.io/badge/license-MIT-6f647a)](LICENSE)
+Growth Greenhouse 是一个本地优先的 Windows 学习成长工具。用户创建自己真正想完成的学习目标，设置适合自己的每周时长，并可选择关联一个学习软件。应用从 [Patina](https://github.com/Ceceliaee/patina) 读取有效的前台使用时间，把这些积累转换为植物成长、成长温室和个人奖励。
 
-</div>
+它是一种支持型工具，而不是惩罚型工具：不会试图证明用户是否认真学习，不会强迫用户学习，也不要求云端账号。它要做的是让积累足够可见，让用户愿意明天继续回来。
 
-Growth Greenhouse is a local-first Windows learning companion. You define something you genuinely want to learn, choose a manageable weekly amount, and connect an optional learning application. The app reads effective foreground time from [Patina](https://github.com/Ceceliaee/patina) and turns that accumulation into plant growth, a growth greenhouse, and personal rewards.
-
-It is intentionally supportive rather than punitive. It does not try to prove whether you were paying attention, force you to study, or make a cloud account mandatory. The goal is to make progress visible enough that you want to return tomorrow.
-
-## The Core Loop
+## 核心循环
 
 ```text
-Create a learning goal
+创建学习目标
         ↓
-Choose a weekly target and an optional learning app
+设置每周目标，可选关联学习软件
         ↓
-Patina provides effective foreground activity
+Patina 提供有效前台活动时长
         ↓
-Every 25 minutes becomes one growth unit and one reward point
+每 25 分钟获得一个成长单位和一个成长点
         ↓
-The plant grows through stages
+植物逐步成长
         ↓
-Completed goals move into your garden
+完成的目标移入自己的花园
 ```
 
-One goal becomes one plant. Multiple completed goals become a garden, and the garden is designed to grow into a personal forest over time.
+一个目标对应一株植物，多个完成的目标会形成一座花园，并为未来扩展成个人森林保留空间。
 
-## MVP Features
+## 当前 MVP
 
-- Create, pause, resume, and complete multiple learning goals.
-- Set weekly and daily targets, a start date, and an optional description.
-- Associate one learning application with each active goal.
-- Read Patina's `sessions` table through a read-only SQLite connection.
-- Refresh the Patina source every 30 seconds and show an explicit connection state.
-- Avoid double-counting overlapping activity intervals for a goal.
-- Add manual learning records for study that happens away from the computer.
-- Grow plants from seed to sprout, seedling, mature plant, and flowering stages.
-- Move completed goals into a persistent growth greenhouse.
-- Create ordinary or annual rewards and redeem them with earned points.
-- Keep goals, manual records, and rewards in the app's own local WebView storage.
-- Provide a compact, non-focus-stealing desktop widget for the current goal.
+- 创建、暂停、恢复和完成多个学习目标。
+- 设置每周目标、每日建议、开始日期和描述。
+- 为每个进行中的目标关联一个学习软件。
+- 通过只读 SQLite 连接读取 Patina 的 `sessions` 表。
+- 每 30 秒刷新 Patina 数据源，并显示明确的连接状态。
+- 合并重叠时间区间，避免同一目标重复计算。
+- 为电脑之外的学习内容添加手动学习记录。
+- 植物从种子、发芽、幼苗、成熟到开花阶段成长。
+- 完成目标后移入持久保存的成长温室。
+- 创建普通奖励或年度奖励，并使用成长点兑换。
+- 将目标、手动记录和奖励保存在应用自己的本地 WebView 存储中。
+- 提供一个紧凑、不会主动抢焦点的桌面小组件显示当前目标。
 
-## Privacy And Data
+## 页面与交互
 
-- Growth Greenhouse never writes to the Patina database.
-- Patina is opened read-only; the default source is `%APPDATA%\Patina\patina.db`.
-- If Patina is unavailable, manual learning records remain available and the UI shows the source as disconnected.
-- Goals, manual records, and rewards stay in local browser storage for this MVP.
-- No account, hosted backend, telemetry, or cloud sync is required.
-- The app records time associated with selected applications; it does not verify learning quality.
+- **我的温室**：当前目标、今日进度、本周进度和选中的植物。
+- **成长温室**：保留已完成目标，记录真实积累。
+- **奖励架**：管理个人奖励和当前成长点余额。
+- **数据源设置**：查看 Patina 状态并设置可选的自定义数据库路径。
 
-For study that happens in a browser, on paper, or outside the computer, use a manual learning record. Browser-specific activity integration is intentionally deferred until the core loop is validated.
+小组件是一个可隐藏的透明小窗口，显示当前目标和每周目标，可按需打开主窗口，默认不会强制显示在普通窗口之上。
+
+## 数据与隐私
+
+- Growth Greenhouse 不会写入 Patina 数据库。
+- Patina 以只读方式打开，默认路径为 `%APPDATA%\Patina\patina.db`。
+- Patina 不可用时，手动学习记录仍可使用，界面会明确显示未连接。
+- 目标、手动记录和奖励在 MVP 中保存在本地浏览器存储中。
+- 不需要账号、云端后端、遥测或云同步。
+- 应用只记录选定软件关联的时间，不判断学习质量。
+
+浏览器学习、纸面学习或其他电脑之外的学习，可以使用手动记录。浏览器专属活动接入会等核心循环验证后再考虑。
 
 
-## Build From Source
+## 从源码运行
 
-### Requirements
+### 环境要求
 
-- Windows 10 or Windows 11
-- Node.js 22.5 or newer, because the Vite development adapter uses `node:sqlite`
+- Windows 10 或 Windows 11
+- Node.js 22.5 或更新版本，因为 Vite 开发适配器使用 `node:sqlite`
 - [pnpm](https://pnpm.io/installation)
-- [Rust](https://www.rust-lang.org/tools/install) and the Tauri v2 prerequisites
+- [Rust](https://www.rust-lang.org/tools/install) 和 Tauri v2 所需环境
 
-### Run The Desktop App
+### 运行桌面应用
 
 ```powershell
 git clone https://github.com/Sheniq/Growth-Greenhouse.git
@@ -83,53 +82,53 @@ pnpm install
 pnpm tauri:dev
 ```
 
-### Run The Browser Preview
+### 运行浏览器预览
 
 ```powershell
 pnpm dev
 ```
 
-The Vite development server listens on `127.0.0.1:1421` and exposes only the local read-only Patina adapter used by the browser preview. The native Tauri build calls the Rust adapter directly.
+Vite 开发服务器只监听 `127.0.0.1:1421`，并提供浏览器预览使用的本地只读 Patina 适配器。Tauri 原生版本直接调用 Rust 适配器。
 
-### Build
+### 构建
 
 ```powershell
 pnpm build
 pnpm tauri:build
 ```
 
-The Tauri bundle is currently disabled for this early MVP. The app can be run and tested in development mode; release packaging will be enabled after the data model and widget behavior stabilize.
+这个早期 MVP 暂时关闭了 Tauri 安装包打包。当前可以使用开发模式运行和验证，等数据模型与小组件行为稳定后再启用正式发布包。
 
-## Project Structure
+## 项目结构
 
 ```text
-src/App.tsx          Main greenhouse, garden, rewards, and settings UI
-src/Widget.tsx       Compact desktop widget view
-src/styles.css       Application and widget styling
-src-tauri/src/lib.rs Read-only Patina adapter and native commands
-vite.config.ts       Vite preview server and local Patina API
+src/App.tsx          温室、花园、奖励和设置界面
+src/Widget.tsx       桌面小组件视图
+src/styles.css       应用和小组件样式
+src-tauri/src/lib.rs Patina 只读适配器和原生命令
+vite.config.ts       Vite 预览服务器和本地 Patina API
 ```
 
-The code keeps the integration boundary small: Patina supplies read-only activity sessions, while Growth Greenhouse owns learning goals, manual records, growth, rewards, and presentation.
+项目保持很小的集成边界：Patina 只提供只读活动会话，Growth Greenhouse 负责学习目标、手动记录、成长、奖励和界面展示。
 
-## Product Boundaries
+## 产品边界
 
-The first version deliberately does not include AI-generated plans, strong application blocking, commitment deposits, social supervision, payment, cloud sync, or automatic proof that a user studied seriously. These are separate product decisions, not hidden promises of the MVP.
+第一版明确不包含 AI 自动生成计划、强力应用屏蔽、承诺抵押、社交监督、支付、云同步，也不自动证明用户是否认真学习。这些是后续独立的产品决策，不是 MVP 的隐藏承诺。
 
-The current product is for people who already want to make progress and would benefit from a visible, low-pressure accumulation loop. It is not intended to be an employee-monitoring system or an unbreakable anti-distraction lock.
+当前产品面向本来就有学习意愿、希望看见积累过程的人。它不是员工监控系统，也不是无法绕过的防分心锁。
 
-## Roadmap
+## 后续方向
 
-1. Validate the daily loop: goal, learning time, growth, and return visit.
-2. Improve plan editing, weekly summaries, and plant-stage feedback.
-3. Expand the greenhouse into gardens, forests, themes, and richer annual goals.
-4. Add browser activity and other optional learning sources.
-5. Consider AI planning or stronger commitment tools only after the local core proves useful.
+1. 验证“目标、学习时间、成长、第二天回来”这一日常循环。
+2. 改进计划编辑、每周总结和植物阶段反馈。
+3. 将温室扩展为花园、森林、主题区域和更丰富的年度目标。
+4. 增加浏览器活动和其他可选学习来源。
+5. 在本地核心体验证明有用之后，再考虑 AI 计划或更强的承诺机制。
 
-## Contributing
+## 参与贡献
 
-This is an early personal project. Keep contributions focused on the current local-first scope, preserve the read-only Patina boundary, and avoid adding network dependencies to the core experience. Please include clear reproduction steps for bugs and do not attach personal activity databases or window-title exports to issues.
+这是一个早期个人项目。贡献请保持在当前本地优先范围内，保留 Patina 只读边界，避免给核心体验增加网络依赖。提交问题时请提供清晰的复现步骤，不要上传个人活动数据库或窗口标题导出文件。
 
-## License
+## 开源协议
 
-Growth Greenhouse is released under the [MIT License](LICENSE).
+Growth Greenhouse 使用 [MIT License](LICENSE) 发布。
