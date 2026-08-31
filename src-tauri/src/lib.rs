@@ -1,6 +1,7 @@
 use rusqlite::Connection;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
+use tauri::Manager;
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

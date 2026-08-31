@@ -16,7 +16,7 @@ Turn the time you choose to spend learning into a growing place of your own.
 
 </div>
 
-Growth Greenhouse is a local-first Windows learning companion. You define something you genuinely want to learn, choose a manageable weekly amount, and connect an optional learning application. The app reads effective foreground time from [Patina](https://github.com/Ceceliaee/patina) and turns that accumulation into plant growth, a completed garden, and personal rewards.
+Growth Greenhouse is a local-first Windows learning companion. You define something you genuinely want to learn, choose a manageable weekly amount, and connect an optional learning application. The app reads effective foreground time from [Patina](https://github.com/Ceceliaee/patina) and turns that accumulation into plant growth, a growth greenhouse, and personal rewards.
 
 It is intentionally supportive rather than punitive. It does not try to prove whether you were paying attention, force you to study, or make a cloud account mandatory. The goal is to make progress visible enough that you want to return tomorrow.
 
@@ -48,7 +48,7 @@ One goal becomes one plant. Multiple completed goals become a garden, and the ga
 - Avoid double-counting overlapping activity intervals for a goal.
 - Add manual learning records for study that happens away from the computer.
 - Grow plants from seed to sprout, seedling, mature plant, and flowering stages.
-- Move completed goals into a persistent completed garden.
+- Move completed goals into a persistent growth greenhouse.
 - Create ordinary or annual rewards and redeem them with earned points.
 - Keep goals, manual records, and rewards in the app's own local WebView storage.
 - Provide a compact, non-focus-stealing desktop widget for the current goal.
@@ -77,8 +77,8 @@ For study that happens in a browser, on paper, or outside the computer, use a ma
 ### Run The Desktop App
 
 ```powershell
-git clone https://github.com/Sheniq/TimeTracker.git
-cd TimeTracker
+git clone https://github.com/Sheniq/Growth-Greenhouse.git
+cd Growth-Greenhouse
 pnpm install
 pnpm tauri:dev
 ```
