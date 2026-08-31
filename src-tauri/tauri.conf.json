@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Growth Greenhouse",
+  "mainBinaryName": "Growth Greenhouse",
+  "version": "0.1.0",
+  "identifier": "com.growthgreenhouse.app",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://127.0.0.1:1421",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      { "label": "main", "title": "Growth Greenhouse", "width": 1180, "height": 820, "minWidth": 920, "minHeight": 680, "resizable": true, "url": "index.html" },
+      { "label": "widget", "title": "Growth Greenhouse", "width": 310, "height": 76, "x": 32, "y": 32, "decorations": false, "transparent": true, "resizable": false, "alwaysOnTop": false, "skipTaskbar": true, "focus": false, "visible": true, "url": "index.html#widget" }
+    ],
+    "security": { "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost" }
+  },
+  "bundle": { "active": false }
+}
