@@ -15,6 +15,7 @@ function patinaDatabasePath(value: string | null) {
 function json(response: { setHeader: (name: string, value: string) => void; statusCode: number; end: (body: string) => void }, statusCode: number, value: unknown) {
   response.statusCode = statusCode;
   response.setHeader("Content-Type", "application/json; charset=utf-8");
+  response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   response.end(JSON.stringify(value));
 }
 

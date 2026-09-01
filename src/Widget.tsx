@@ -15,8 +15,8 @@ export default function Widget() {
   }, []);
   return <div className="widget-card" onDoubleClick={() => void invoke("show_main_window")}>
     <div className="widget-icon"><Sprout size={18} /></div>
-    <div className="widget-copy"><span>Growth Greenhouse</span><strong>{goal?.title ?? text(language, "还没有种下目标", "No goal planted yet")}</strong><small>{goal ? text(language, `每周 ${goal.weekly} 分钟 · 今天继续一点点`, `${goal.weekly} min per week · Keep growing today`) : text(language, "双击打开并种下第一个目标", "Double-click to plant your first goal")}</small></div>
-    <button className="widget-open" onClick={() => void invoke("show_main_window")} aria-label={text(language, "打开 Growth Greenhouse", "Open Growth Greenhouse")}><ChevronRight size={17} /></button>
+    <div className="widget-copy"><span>成长温室</span><strong>{goal?.title ?? text(language, "还没有目标", "No goal planted yet")}</strong><small>{goal ? text(language, `每周 ${goal.weekly} 分钟 · 今天继续`, `${goal.weekly} min per week · Keep growing today`) : text(language, "双击打开并创建目标", "Double-click to plant your first goal")}</small></div>
+    <button className="widget-open" onClick={() => void invoke("show_main_window")} aria-label={text(language, "打开成长温室", "Open Growth Greenhouse")}><ChevronRight size={17} /></button>
     <div className="widget-leaf"><Leaf size={14} /></div>
   </div>;
 }
