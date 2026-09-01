@@ -4,18 +4,14 @@ import { ChevronRight, Leaf, Sprout } from "lucide-react";
 
 type Goal = { title: string; weekly: number; daily: number; startDate: string; };
 const GOALS_KEY = "growth-greenhouse.goals";
-const LANGUAGE_KEY = "growth-greenhouse.language";
 type Language = "zh" | "en";
-const text = (language: Language, zh: string, en: string) => language === "en" ? en : zh;
+const text = (_language: Language, zh: string, _en: string) => zh;
 
 export default function Widget() {
   const [goal, setGoal] = useState<Goal | null>(null);
-  const [language, setLanguage] = useState<Language>(() => localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh");
+  const language: Language = "zh";
   useEffect(() => {
     try { setGoal(JSON.parse(localStorage.getItem(GOALS_KEY) ?? "null")?.[0] ?? null); } catch { setGoal(null); }
-    const updateLanguage = () => setLanguage(localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "zh");
-    window.addEventListener("storage", updateLanguage);
-    return () => window.removeEventListener("storage", updateLanguage);
   }, []);
   return <div className="widget-card" onDoubleClick={() => void invoke("show_main_window")}>
     <div className="widget-icon"><Sprout size={18} /></div>
