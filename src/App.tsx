@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  Award, Check, ChevronLeft, ChevronRight, CircleHelp, Clock3, Database, Flower2, FolderOpen, Gift, Leaf,
-  Menu, Plus, RefreshCw, Settings2, Sprout, Target, Trophy, Trees, X,
+  Award, BarChart3, CalendarDays, Check, ChevronLeft, ChevronRight, CircleHelp, Clock3, Database, Flower2,
+  FolderOpen, Gift, Leaf, Menu, Monitor, Plus, RefreshCw, Settings2, Sprout, Target, TrendingUp, Trees, X,
 } from "lucide-react";
 import Widget from "./Widget";
 
@@ -109,6 +109,91 @@ function unionMinutes(sessions: Session[], from: number, to: number) {
   return total / 60000;
 }
 
+type UsagePeriod = { minutes: number; activeDays: number };
+type AppUsage = { name: string; exeName: string; minutes: number; percentage: number };
+type UsageOverviewData = {
+  total: UsagePeriod;
+  today: UsagePeriod;
+  week: UsagePeriod;
+  month: UsagePeriod;
+  year: UsagePeriod;
+  recent7: UsagePeriod;
+  trend: { label: string; minutes: number; date: string }[];
+  topApps: AppUsage[];
+};
+
+const localDayStart = (timestamp: number) => {
+  const value = new Date(timestamp);
+  value.setHours(0, 0, 0, 0);
+  return value;
+};
+
+function activeDaysInRange(sessions: Session[], from: number, to: number) {
+  const days = new Set<string>();
+  for (const session of sessions) {
+    let cursor = Math.max(from, session.startTime);
+    const end = Math.min(to, session.endTime ?? to);
+    while (cursor < end) {
+      const day = localDayStart(cursor);
+      days.add(dateText(day));
+      cursor = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+    }
+  }
+  return days.size;
+}
+
+function usagePeriod(sessions: Session[], from: number, to: number): UsagePeriod {
+  return { minutes: unionMinutes(sessions, from, to), activeDays: activeDaysInRange(sessions, from, to) };
+}
+
+function appUsage(sessions: Session[], from: number, to: number, totalMinutes: number): AppUsage[] {
+  const groups = new Map<string, { name: string; exeName: string; sessions: Session[] }>();
+  for (const session of sessions) {
+    const key = session.exeName.toLowerCase();
+    if (!key) continue;
+    const group = groups.get(key) ?? { name: session.appName || session.exeName, exeName: session.exeName, sessions: [] };
+    group.sessions.push(session);
+    groups.set(key, group);
+  }
+  return Array.from(groups.values()).map((group) => {
+    const value = unionMinutes(group.sessions, from, to);
+    return { name: group.name, exeName: group.exeName, minutes: value, percentage: totalMinutes ? Math.round(value / totalMinutes * 100) : 0 };
+  }).filter((app) => app.minutes > 0).sort((a, b) => b.minutes - a.minutes).slice(0, 5);
+}
+
+function usageOverview(sessions: Session[]): UsageOverviewData {
+  const now = Date.now();
+  const current = new Date(now);
+  const todayStart = localDayStart(now).getTime();
+  const weekStart = monday(current).getTime();
+  const monthStart = new Date(current.getFullYear(), current.getMonth(), 1).getTime();
+  const yearStart = new Date(current.getFullYear(), 0, 1).getTime();
+  const recent7Start = new Date(localDayStart(now));
+  recent7Start.setDate(recent7Start.getDate() - 6);
+  const recent30Start = new Date(localDayStart(now));
+  recent30Start.setDate(recent30Start.getDate() - 29);
+  const allStart = sessions.reduce((minimum, session) => Math.min(minimum, session.startTime), now);
+  const recent30 = usagePeriod(sessions, recent30Start.getTime(), now);
+  const trend: UsageOverviewData["trend"] = [];
+  for (let offset = 0; offset < 7; offset += 1) {
+    const day = new Date(recent7Start);
+    day.setDate(day.getDate() + offset);
+    const from = day.getTime();
+    const to = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+    trend.push({ label: day.toLocaleDateString("zh-CN", { weekday: "short" }), date: dateText(day), minutes: unionMinutes(sessions, from, Math.min(to, now)) });
+  }
+  return {
+    total: usagePeriod(sessions, allStart, now),
+    today: usagePeriod(sessions, todayStart, now),
+    week: usagePeriod(sessions, weekStart, now),
+    month: usagePeriod(sessions, monthStart, now),
+    year: usagePeriod(sessions, yearStart, now),
+    recent7: usagePeriod(sessions, recent7Start.getTime(), now),
+    trend,
+    topApps: appUsage(sessions, recent30Start.getTime(), now, recent30.minutes),
+  };
+}
+
 function goalStats(goal: Goal, sessions: Session[], records: ManualRecord[]) {
   const start = new Date(`${goal.startDate}T00:00:00`).getTime();
   const now = Date.now();
@@ -166,6 +251,7 @@ export default function App() {
   const syncRequest = useRef(0);
   const language: Language = "zh";
   const stats = useMemo(() => new Map(goals.map((goal) => [goal.id, goalStats(goal, sessions, records)])), [goals, sessions, records]);
+  const usage = useMemo(() => usageOverview(sessions), [sessions]);
   const active = goals.filter((goal) => goal.status !== "completed");
   const completed = goals.filter((goal) => goal.status === "completed");
   const selected = active.find((goal) => goal.id === selectedId) ?? active[0] ?? null;
@@ -181,8 +267,7 @@ export default function App() {
       const current = await sourceSnapshot(path);
       let nextSessions: Session[] = [];
       if (current.available) {
-        const start = Math.min(Date.now() - 90 * 86400000, ...goals.map((goal) => new Date(`${goal.startDate}T00:00:00`).getTime()), Date.now());
-        nextSessions = await sessionSnapshot(start, Date.now(), current.databasePath);
+        nextSessions = await sessionSnapshot(0, Date.now(), current.databasePath);
       }
       if (requestId !== syncRequest.current) return;
       setSource(current);
@@ -272,9 +357,28 @@ export default function App() {
     </aside>
       <main className="main"><header className="topbar"><div><span className="breadcrumb"><button className="breadcrumb-link" onClick={() => go("greenhouse")}>{text(language, "我的空间", "My Space")}</button><ChevronRight size={14} /><button className="breadcrumb-link" onClick={() => go(view)}>{pageName}</button></span><h1>{pageTitle}</h1></div><div className="top-actions">{view === "greenhouse" ? <div className="points"><Award size={17} /><strong>{formatPoints(totalPoints)}</strong><span>{text(language, "奖励点", "points")}</span></div> : null}<div className="menu-wrap"><button className="menu-button" title={text(language, "打开菜单", "Open menu")} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>{menuOpen ? <div className="menu-popover"><button onClick={() => go("greenhouse")}><Leaf size={15} /> {text(language, "我的温室", "My Greenhouse")}</button><button onClick={() => go("garden")}><Trees size={15} /> {text(language, "成长温室", "Growth Greenhouse")}</button><button onClick={() => go("rewards")}><Gift size={15} /> {text(language, "奖励", "Reward Shelf")}</button><button onClick={() => go("settings")}><Settings2 size={15} /> {text(language, "数据源", "Data Source")}</button></div> : null}</div></div></header>
       {error ? <div className="alert"><CircleHelp size={16} /> {error}<button onClick={() => setError("")}><X size={15} /></button></div> : null}
+      {view === "greenhouse" ? <UsageOverview usage={usage} syncing={syncing} lastSyncedAt={lastSyncedAt} /> : null}
       {view === "greenhouse" ? <><section className="welcome-banner"><div><span className="section-label">{text(language, "本周进度", "THIS WEEK")}</span><h2>{active.length ? text(language, "一点一点，目标会长大", "Your greenhouse is growing") : text(language, "先种下第一个目标", "Plant your first goal")}</h2><p>{active.length ? text(language, `有 ${active.length} 个进行中的目标。每 ${UNIT} 分钟增加 1 个成长单位。`, `Caring for ${active.length} goal${active.length === 1 ? "" : "s"}. Every ${UNIT} minutes leaves one growth unit.`) : text(language, "从一件你真正想学的事开始。", "Start with something you genuinely want to learn.")}</p><div className="banner-actions"><button className="primary" onClick={() => setModal("goal")}><Plus size={16} /> {text(language, "创建目标", "Plant a goal")}</button><button className="ghost" onClick={() => setModal("record")} disabled={!goals.length}><Clock3 size={16} /> {text(language, "记录学习", "Log learning")}</button></div></div><div className="banner-scene"><div className="sun" /><div className="cloud cloud-a" /><div className="cloud cloud-b" /><div className="ground" /><div className="scene-glass glass-a" /><div className="scene-glass glass-b" /><Plant kind={active[0] ? plantKindFor(active[0]) : "flower"} units={active[0] ? stats.get(active[0].id)?.units ?? 0 : 15} progress={active[0] ? plantProgress(stats.get(active[0].id)?.total ?? 0) : 0.5} /></div></section><div className="section-heading"><div><span className="section-label">{text(language, "学习目标", "YOUR PLANTS")}</span><h2>{text(language, "进行中的目标", "Growing now")}</h2></div><button className="text-button" onClick={() => setModal("goal")}><Plus size={16} /> {text(language, "添加目标", "Add goal")}</button></div><section className="plant-grid">{active.length ? active.map((goal) => <GoalCard key={goal.id} goal={goal} stat={stats.get(goal.id)!} selected={selected?.id === goal.id} onClick={() => setSelectedId(goal.id)} />) : <EmptyState onClick={() => setModal("goal")} />}</section>{selected ? <Detail goal={selected} stat={stats.get(selected.id)!} onRecord={() => setModal("record")} onPause={() => setGoals((current) => current.map((goal) => goal.id === selected.id ? { ...goal, status: goal.status === "paused" ? "active" : "paused" } : goal))} onComplete={completeSelected} /> : null}<section className="lower-grid"><Garden completed={completed} onOpen={() => go("garden")} /><MiniRewards rewards={rewards} points={totalPoints} onOpen={() => go("rewards")} /></section></> : view === "garden" ? <CompletedGarden completed={completed} selectedId={gardenSelectedId} onSelect={setGardenSelectedId} onBack={() => go("greenhouse")} stats={stats} /> : view === "rewards" ? <Rewards rewards={rewards} points={totalPoints} onAdd={() => setModal("reward")} onRedeem={(id) => { const reward = rewards.find((item) => item.id === id); if (reward && !reward.redeemed && totalPoints >= reward.cost) setRewards((current) => current.map((item) => item.id === id ? { ...item, redeemed: true } : item)); }} /> : <Settings path={path} source={source} sessions={sessions} lastSyncedAt={lastSyncedAt} onSave={savePath} onFileSelect={selectDatabaseFile} />}
     </main>{modal ? <Modal onClose={() => setModal(null)}>{modal === "goal" ? <GoalForm sessions={sessions} goals={goals} onSubmit={addGoal} /> : modal === "record" ? <RecordForm goals={goals} selectedId={selected?.id} onSubmit={addRecord} /> : <RewardForm onSubmit={addReward} />}</Modal> : null}
   </div></LanguageContext.Provider>;
+}
+
+function UsageOverview({ usage, syncing, lastSyncedAt }: { usage: UsageOverviewData; syncing: boolean; lastSyncedAt: number | null }) {
+  const language = useLanguage();
+  const maxTrend = Math.max(1, ...usage.trend.map((item) => item.minutes));
+  const syncLabel = syncing ? "正在同步 Patina" : lastSyncedAt ? `已同步 ${new Date(lastSyncedAt).toLocaleTimeString()}` : "等待同步";
+  const periods = [
+    { label: "今天", value: usage.today },
+    { label: "本周", value: usage.week },
+    { label: "本月", value: usage.month },
+    { label: "今年", value: usage.year },
+  ];
+  return <section className="panel usage-overview" aria-label="Patina 使用时长">
+    <div className="usage-head"><div><span className="section-label">{text(language, "Patina 使用", "PATINA USAGE")}</span><h2>{text(language, "使用时长", "Usage time")}</h2></div><span className={`sync-chip ${syncing ? "syncing" : ""}`}><i />{syncLabel}</span></div>
+    <div className="usage-total"><div><span>{text(language, "累计总时长", "All tracked time")}</span><strong>{minutes(usage.total.minutes, language)}</strong><small>{text(language, "Patina 已记录的全部前台活动", "All foreground activity recorded by Patina")}</small></div><div className="usage-total-meta"><div><CalendarDays size={15} /><strong>{usage.total.activeDays}</strong><span>{text(language, "活跃天数", "active days")}</span></div><div><TrendingUp size={15} /><strong>{minutes(usage.recent7.minutes / 7, language)}</strong><span>{text(language, "近 7 日均值", "7-day average")}</span></div></div></div>
+    <div className="usage-period-grid">{periods.map((period) => <div className="usage-period" key={period.label}><span>{period.label}</span><strong>{minutes(period.value.minutes, language)}</strong><small>{period.value.activeDays} {text(language, "天有记录", "active days")}</small></div>)}</div>
+    <div className="usage-lower"><div className="usage-trend"><div className="usage-subhead"><strong>{text(language, "近 7 天", "Last 7 days")}</strong><span>{minutes(usage.recent7.minutes, language)}</span></div><div className="usage-bars">{usage.trend.map((item) => <div className="usage-bar-item" key={item.date} title={`${item.date} · ${minutes(item.minutes, language)}`}><div className="usage-bar-track"><i style={{ height: `${item.minutes ? Math.max(7, item.minutes / maxTrend * 100) : 0}%` }} /></div><span>{item.label}</span></div>)}</div></div><div className="usage-apps"><div className="usage-subhead"><strong>{text(language, "近 30 日常用应用", "Top apps · 30 days")}</strong><Monitor size={15} /></div>{usage.topApps.length ? usage.topApps.slice(0, 3).map((app) => <div className="usage-app" key={app.exeName}><div><strong>{app.name}</strong><span>{minutes(app.minutes, language)}</span></div><div className="usage-app-track"><i style={{ width: `${Math.min(100, app.percentage)}%` }} /></div></div>) : <div className="usage-app-empty"><BarChart3 size={17} />{text(language, "还没有 Patina 应用记录", "No Patina app records yet")}</div>}</div></div>
+  </section>;
 }
 
 function GoalCard({ goal, stat, selected, onClick }: { goal: Goal; stat: ReturnType<typeof goalStats>; selected: boolean; onClick: () => void }) { const language = useLanguage(); const percent = goal.weekly ? Math.min(100, stat.week / goal.weekly * 100) : 0; return <button className={`plant-card ${selected ? "selected" : ""}`} onClick={onClick}><div className="card-plant"><Plant kind={plantKindFor(goal)} units={stat.units} progress={plantProgress(stat.total)} /></div><div className="card-info"><div className="card-title"><strong>{goal.title}</strong><span>{stage(stat.units, false, language)}</span></div><p>{goal.app || text(language, "手动记录", "Manual log")}</p><div className="progress"><i style={{ width: `${percent}%` }} /></div><div className="card-meta"><span>{text(language, "本周", "This week")} {minutes(stat.week, language)}</span><span>{stat.units} {text(language, "成长单位", "units")}</span></div></div></button>; }
@@ -297,7 +401,7 @@ function EmptyState({ onClick }: { onClick: () => void }) { const language = use
    useEffect(() => setValue(path), [path]);
   const recent = [...sessions].sort((a, b) => b.startTime - a.startTime).slice(0, 12);
   const totalMinutes = sessions.reduce((sum, session) => sum + sessionDuration(session), 0);
-  return <div className="page-stack settings-page"><div className="page-intro"><span className="section-label">{text(language, "数据源", "DATA SOURCE")}</span><h2>{text(language, "连接 Patina", "Let Patina track the time")}</h2><p>{text(language, "只读读取 Patina 的前台活动记录，用于计算目标进度。", "The preview reads Patina sessions through a local read-only adapter; the Tauri build uses the same logic.")}</p></div><section className="panel settings-panel"><div className="settings-state"><i className={source?.available ? "online" : ""} /><div><strong>{source?.available ? text(language, "已连接 Patina", "Patina connected") : text(language, "未连接 Patina", "Patina disconnected")}</strong><span>{source?.available ? text(language, `数据库更新于 ${source.lastModifiedMs ? new Date(source.lastModifiedMs).toLocaleTimeString() : "刚刚"}`, `Database last updated ${source.lastModifiedMs ? new Date(source.lastModifiedMs).toLocaleTimeString() : "just now"}`) : text(language, "请确认 Patina 已安装并有数据", "Make sure Patina is installed and has data")}</span></div></div><div className="path-hints"><div><span>{text(language, "程序路径", "Patina is usually at")}</span><code>%LOCALAPPDATA%\Patina\Patina.exe</code></div><div><span>{text(language, "数据库路径", "Patina database is usually at")}</span><code>%APPDATA%\Patina\patina.db</code></div></div><label>{text(language, "数据库路径", "Patina database path")}<span>{text(language, "留空则使用默认路径：%APPDATA%\Patina\patina.db", "Default: %APPDATA%\Patina\patina.db")}</span><input value={value} onChange={(event) => setValue(event.target.value)} placeholder={text(language, "留空使用默认路径", "Leave empty for the default path")} /></label><div className="settings-actions"><button className="primary" onClick={() => onSave(value)}><Check size={15} /> {text(language, "保存路径", "Save path")}</button><label className="file-picker secondary"><FolderOpen size={15} /> {text(language, "选择数据库", "Choose in Explorer")}<input type="file" accept=".db,.sqlite,.sqlite3" onChange={(event) => { const file = event.target.files?.[0]; if (file) void onFileSelect(file); event.currentTarget.value = ""; }} /></label></div>{source?.databasePath ? <code className="selected-path">{text(language, "当前读取：", "Reading: ")}{source.databasePath}</code> : null}</section><section className="panel database-records"><div className="panel-heading"><div><span className="section-label">{text(language, "Patina 会话", "PATINA SESSIONS")}</span><h2>{text(language, "已读记录", "Database records")}</h2></div><Database size={19} /></div><div className="record-summary"><strong>{sessions.length}</strong><span>{text(language, "条会话", "records")}</span><b>{minutes(totalMinutes, language)}</b><span>{text(language, "读取总时长", "total in range")}</span></div>{recent.length ? <div className="records-table"><div className="records-row records-head"><span>{text(language, "应用", "App")}</span><span>{text(language, "开始时间", "Started")}</span><span>{text(language, "结束时间", "Ended")}</span><span>{text(language, "时长", "Duration")}</span></div>{recent.map((session) => <div className="records-row" key={session.id}><strong title={session.exeName}>{session.appName || session.exeName}</strong><span>{sessionTime(session.startTime, language)}</span><span>{session.endTime ? sessionTime(session.endTime, language) : text(language, "进行中", "Active")}</span><span>{minutes(sessionDuration(session), language)}</span></div>)}</div> : <div className="records-empty"><Database size={22} /><span>{text(language, "还没有会话记录", "No sessions found yet")}</span><small>{text(language, "请检查数据库路径，或先让 Patina 记录一些活动。", "Check the database path and let Patina record some activity first.")}</small></div>}<p className="records-note">{text(language, "仅显示最近 90 天的 Patina 会话，不会修改原数据库。", "The preview shows Patina sessions from the last 90 days. Data is read-only and never written back.")}</p></section></div>;
+  return <div className="page-stack settings-page"><div className="page-intro"><span className="section-label">{text(language, "数据源", "DATA SOURCE")}</span><h2>{text(language, "连接 Patina", "Let Patina track the time")}</h2><p>{text(language, "只读读取 Patina 的前台活动记录，用于计算目标进度。", "The preview reads Patina sessions through a local read-only adapter; the Tauri build uses the same logic.")}</p></div><section className="panel settings-panel"><div className="settings-state"><i className={source?.available ? "online" : ""} /><div><strong>{source?.available ? text(language, "已连接 Patina", "Patina connected") : text(language, "未连接 Patina", "Patina disconnected")}</strong><span>{source?.available ? text(language, `数据库更新于 ${source.lastModifiedMs ? new Date(source.lastModifiedMs).toLocaleTimeString() : "刚刚"}`, `Database last updated ${source.lastModifiedMs ? new Date(source.lastModifiedMs).toLocaleTimeString() : "just now"}`) : text(language, "请确认 Patina 已安装并有数据", "Make sure Patina is installed and has data")}</span></div></div><div className="path-hints"><div><span>{text(language, "程序路径", "Patina is usually at")}</span><code>%LOCALAPPDATA%\Patina\Patina.exe</code></div><div><span>{text(language, "数据库路径", "Patina database is usually at")}</span><code>%APPDATA%\Patina\patina.db</code></div></div><label>{text(language, "数据库路径", "Patina database path")}<span>{text(language, "留空则使用默认路径：%APPDATA%\Patina\patina.db", "Default: %APPDATA%\Patina\patina.db")}</span><input value={value} onChange={(event) => setValue(event.target.value)} placeholder={text(language, "留空使用默认路径", "Leave empty for the default path")} /></label><div className="settings-actions"><button className="primary" onClick={() => onSave(value)}><Check size={15} /> {text(language, "保存路径", "Save path")}</button><label className="file-picker secondary"><FolderOpen size={15} /> {text(language, "选择数据库", "Choose in Explorer")}<input type="file" accept=".db,.sqlite,.sqlite3" onChange={(event) => { const file = event.target.files?.[0]; if (file) void onFileSelect(file); event.currentTarget.value = ""; }} /></label></div>{source?.databasePath ? <code className="selected-path">{text(language, "当前读取：", "Reading: ")}{source.databasePath}</code> : null}</section><section className="panel database-records"><div className="panel-heading"><div><span className="section-label">{text(language, "Patina 会话", "PATINA SESSIONS")}</span><h2>{text(language, "已读记录", "Database records")}</h2></div><Database size={19} /></div><div className="record-summary"><strong>{sessions.length}</strong><span>{text(language, "条会话", "records")}</span><b>{minutes(totalMinutes, language)}</b><span>{text(language, "全部读取时长", "all tracked time")}</span></div>{recent.length ? <div className="records-table"><div className="records-row records-head"><span>{text(language, "应用", "App")}</span><span>{text(language, "开始时间", "Started")}</span><span>{text(language, "结束时间", "Ended")}</span><span>{text(language, "时长", "Duration")}</span></div>{recent.map((session) => <div className="records-row" key={session.id}><strong title={session.exeName}>{session.appName || session.exeName}</strong><span>{sessionTime(session.startTime, language)}</span><span>{session.endTime ? sessionTime(session.endTime, language) : text(language, "进行中", "Active")}</span><span>{minutes(sessionDuration(session), language)}</span></div>)}</div> : <div className="records-empty"><Database size={22} /><span>{text(language, "还没有会话记录", "No sessions found yet")}</span><small>{text(language, "请检查数据库路径，或先让 Patina 记录一些活动。", "Check the database path and let Patina record some activity first.")}</small></div>}<p className="records-note">{text(language, "统计使用全部 Patina 会话，记录区展示最近 12 条，不会修改原数据库。", "All Patina sessions are included in totals; the table shows the 12 most recent records. Data is read-only.")}</p></section></div>;
 }
 function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) { const language = useLanguage(); return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}><div className="modal"><button className="modal-close" onClick={onClose} aria-label={text(language, "关闭", "Close")}><X size={18} /></button>{children}</div></div>; }
 function GoalForm({ sessions, goals, onSubmit }: { sessions: Session[]; goals: Goal[]; onSubmit: (event: FormEvent<HTMLFormElement>) => void }) { const language = useLanguage(); const apps = Array.from(new Map(sessions.map((session) => [session.exeName.toLowerCase(), { exe: session.exeName, app: session.appName || session.exeName }])).values()).filter((item) => !goals.some((goal) => goal.exe.toLowerCase() === item.exe.toLowerCase() && goal.status !== "completed")); return <form className="form" onSubmit={onSubmit}><span className="section-label">{text(language, "新目标", "NEW PLANT")}</span><h2>{text(language, "创建学习目标", "Plant a goal")}</h2><p>{text(language, "先写下想学的事，计划可以之后再补充。", "Keep it simple. Start with what you genuinely want to learn.")}</p><label>{text(language, "目标名称", "Goal name")}<input name="title" required autoFocus placeholder={text(language, "例如：Blender 建模", "e.g. Learn Blender modeling")} /></label><label>{text(language, "每周学习时长（分钟）", "Weekly target (minutes)")}<input name="weekly" type="number" min="1" step="1" inputMode="numeric" defaultValue="200" /></label><details className="advanced-options"><summary>{text(language, "更多设置", "More settings")}</summary><label>{text(language, "目标描述", "Short description")}<input name="description" placeholder={text(language, "例如：完成一个可以打印的模型", "e.g. Make a first printable model")} /></label><label>{text(language, "每日建议时长（分钟）", "Daily suggestion (minutes)")}<input name="daily" type="number" min="0" step="1" inputMode="numeric" defaultValue="25" /></label><label>{text(language, "开始日期", "Start date")}<input name="startDate" type="date" defaultValue={today()} /></label><label>{text(language, "关联 Patina 软件", "Learning app")}<span className="hint">{text(language, "可选。关联后自动累计该软件的前台活动时长。", "Optional. Effective time from Patina will be counted automatically.")}</span><select name="exe" defaultValue="" onChange={(event) => { const option = event.currentTarget.selectedOptions[0]; const input = event.currentTarget.form?.elements.namedItem("app") as HTMLInputElement | null; if (input) input.value = option?.dataset.app ?? ""; }}><option value="" data-app="">{text(language, "暂不关联，使用手动记录", "No app yet; use manual logs")}</option>{apps.map((app) => <option key={app.exe} value={app.exe} data-app={app.app}>{app.app}</option>)}</select><input type="hidden" name="app" /></label></details><button className="primary form-submit"><Sprout size={16} /> {text(language, "创建目标", "Plant goal")}</button></form>; }
