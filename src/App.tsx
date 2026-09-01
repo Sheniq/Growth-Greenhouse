@@ -134,7 +134,7 @@ function Plant({ units, completed = false, small = false, kind = "sprout", progr
 function unionMinutes(sessions: Session[], from: number, to: number) {
   const ranges = sessions.map((session) => ({
     from: Math.max(session.startTime, from),
-    to: Math.min(session.endTime ?? to, to),
+    to: Math.min(sessionEnd(session, to), to),
   })).filter((range) => range.to > range.from).sort((a, b) => a.from - b.from);
   let total = 0;
   let current: { from: number; to: number } | undefined;
