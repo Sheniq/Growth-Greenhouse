@@ -40,8 +40,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .top-actions { display: flex; align-items: center; gap: 10px; }
 .points { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; color: #6c865e; background: #eef3e9; border: 1px solid #dce6d7; border-radius: 9px; }
 .points strong { color: #456b4c; font-size: 16px; }.points span { color: #91a08e; font-size: 11px; }
-.sync-button, .menu-button { display: grid; place-items: center; width: 36px; height: 36px; color: #78907c; background: #fbfaf5; border: 1px solid #e0e3db; border-radius: 9px; }.sync-button:hover,.menu-button:hover { color: #3f6b49; border-color: #b9cdb8; }
-.spin { animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
+.menu-button { display: grid; place-items: center; width: 36px; height: 36px; color: #78907c; background: #fbfaf5; border: 1px solid #e0e3db; border-radius: 9px; }.menu-button:hover { color: #3f6b49; border-color: #b9cdb8; }
 .alert { display: flex; align-items: center; gap: 8px; margin: -12px 0 20px; padding: 10px 13px; color: #8b684b; background: #fff3e5; border: 1px solid #efd9be; border-radius: 9px; font-size: 12px; }.alert button { margin-left: auto; color: inherit; border: 0; background: transparent; }
 .welcome-banner { position: relative; min-height: 225px; overflow: hidden; display: flex; justify-content: space-between; margin-bottom: 39px; padding: 32px 37px; background: #dce9db; border: 1px solid #cbdcca; border-radius: 15px; }
 .welcome-banner h2 { margin: 10px 0 6px; color: #34553d; font-size: 25px; font-weight: 600; letter-spacing: -.02em; }.welcome-banner p { margin: 0; color: #6e856f; font-size: 13px; }.section-label { color: #8da08c; font-size: 10px; letter-spacing: .16em; font-weight: 700; }
@@ -114,8 +113,8 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .points strong { color: #216d9c; }
 .points span { color: #668fab; }
 .sidebar nav button:nth-child(3) b { color: #216d9c; background: var(--app-info-soft); }
-.sync-button, .menu-button { color: #6b8b72; background: var(--app-panel); border-color: var(--app-border); }
-.sync-button:hover, .menu-button:hover { color: var(--app-accent-hover); border-color: #8ac5a4; }
+.menu-button { color: #6b8b72; background: var(--app-panel); border-color: var(--app-border); }
+.menu-button:hover { color: var(--app-accent-hover); border-color: #8ac5a4; }
 .alert { color: #a55a38; background: #fff0df; border-color: #f0cba9; }
 .welcome-banner { background: #dff3c9; border-color: #bfe5ae; }
 .welcome-banner h2 { color: #28613e; letter-spacing: 0; }
@@ -405,15 +404,6 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .usage-section-title h3 { margin: 6px 0 0; color: #4b6e57; font-size: 13px; font-weight: 600; }
 .usage-section-title > span { color: #91a593; font-size: 10px; white-space: nowrap; }
 .usage-section-title > svg { color: #6fa56c; }
-.usage-chart-scroll { overflow-x: auto; padding-bottom: 3px; }
-.usage-chart { display: grid; grid-template-columns: repeat(var(--usage-columns), minmax(34px, 1fr)); align-items: end; gap: 8px; min-width: min(100%, calc(var(--usage-columns) * 42px)); height: 156px; margin-top: 14px; }
-.usage-chart.wide { min-width: calc(var(--usage-columns) * 42px); }
-.usage-chart.mini { height: 142px; }
-.usage-chart-column { display: grid; grid-template-rows: 122px 19px; align-items: end; min-width: 0; gap: 7px; }
-.usage-chart.mini .usage-chart-column { grid-template-rows: 108px 19px; }
-.usage-chart-track { display: flex; align-items: end; width: 100%; height: 100%; overflow: hidden; background: #f1f6ed; border-radius: 5px 5px 3px 3px; }
-.usage-chart-track i { display: block; width: 100%; min-height: 0; background: var(--app-info); border-radius: 5px 5px 2px 2px; transition: height .45s ease; }
-.usage-chart-column span { overflow: hidden; color: #96a696; font-size: 9px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
 .usage-line-chart-wrap { margin-top: 14px; }
 .usage-line-chart { height: 198px; overflow: hidden; background: linear-gradient(180deg, rgba(238,247,239,.4), rgba(255,255,255,0)); border-radius: 8px; }
 .usage-line-chart-wrap.compact .usage-line-chart { height: 170px; }
