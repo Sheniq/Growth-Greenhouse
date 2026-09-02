@@ -1,8 +1,8 @@
-# Growth Greenhouse
+# 成长温室
 
 把你愿意投入学习的时间，变成一座会持续成长的空间。
 
-**临时英文名：** Growth Greenhouse（成长温室）
+**英文名：** Growth Greenhouse
 
 [English](README.md)
 
@@ -36,6 +36,7 @@ Patina 提供有效前台活动时长
 - 设置每周目标、每日建议、开始日期和描述。
 - 为每个进行中的目标关联一个学习软件。
 - 通过只读 SQLite 连接读取 Patina 的 `sessions` 表。
+- 必须先安装 Patina；未检测到 Patina 时不会独立读取或推测软件使用时间，并会提供 Patina GitHub Releases 链接。
 - 每 5 秒刷新 Patina 数据源，并显示明确的连接状态。
 - 在“数据源”页面按 Patina 风格显示软件使用统计，支持今天、近 7 天、近 30 天、近一年、本周、本月、今年、全部和自定义范围。
 - 显示范围总时长、平均时长、活跃天数、按日或按月趋势、活动热力图、应用排行、应用趋势和最近会话。
@@ -60,6 +61,7 @@ Patina 提供有效前台活动时长
 ## 数据与隐私
 
 - Growth Greenhouse 不会写入 Patina 数据库。
+- 成长温室不独立采集软件前台时间，软件使用统计依赖 Patina 的安装和记录。
 - Patina 以只读方式打开，默认路径为 `%APPDATA%\Patina\patina.db`。
 - Patina 不可用时，手动学习记录仍可使用，界面会明确显示未连接。
 - 目标、手动记录和奖励在 MVP 中保存在本地浏览器存储中。
@@ -102,7 +104,7 @@ pnpm build
 pnpm tauri:build
 ```
 
-Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
+Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.0_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
 
 ## 项目结构
 

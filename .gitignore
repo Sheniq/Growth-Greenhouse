@@ -3,6 +3,16 @@ node_modules/
 dist/
 src-tauri/target/
 src-tauri/gen/
+
+# Keep only the Windows application icon and NSIS artwork. Tauri may generate
+# unused Android, iOS, macOS, and extra PNG variants when refreshing icons.
+src-tauri/icons/*
+!src-tauri/icons/icon.ico
+src-tauri/installer/*
+!src-tauri/installer/header.bmp
+!src-tauri/installer/sidebar.bmp
+!src-tauri/installer/header.svg
+!src-tauri/installer/sidebar.svg
 .cargo/
 
 # Local application data

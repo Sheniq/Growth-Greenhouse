@@ -46,6 +46,7 @@ One goal becomes one plant. Multiple completed goals become a garden, and the ga
 - Set weekly and daily targets, a start date, and an optional description.
 - Associate one learning application with each active goal.
 - Read Patina's `sessions` table through a read-only SQLite connection.
+- Patina must be installed first; if it is not detected, the app does not independently read or infer software usage time and provides a Patina GitHub Releases link.
 - Refresh the Patina source every 5 seconds and show an explicit connection state.
 - Show Patina-style software usage statistics on the Data Source page: today, recent 7 days, recent 30 days, recent year, this week, this month, this year, all time, and custom ranges.
 - Show total time, average time, active days, daily/monthly trends, an activity heatmap, application ranking, application trends, and recent sessions.
@@ -61,6 +62,7 @@ One goal becomes one plant. Multiple completed goals become a garden, and the ga
 ## Privacy And Data
 
 - Growth Greenhouse never writes to the Patina database.
+- Growth Greenhouse does not collect foreground time independently; software usage statistics depend on Patina being installed and recording activity.
 - Patina is opened read-only; the default source is `%APPDATA%\Patina\patina.db`.
 - If Patina is unavailable, manual learning records remain available and the UI shows the source as disconnected.
 - Goals, manual records, and rewards stay in local browser storage for this MVP.
@@ -103,7 +105,7 @@ pnpm build
 pnpm tauri:build
 ```
 
-The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
+The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.0_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
 
 ## Project Structure
 

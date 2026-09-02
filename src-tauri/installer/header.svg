@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="150" height="57" viewBox="0 0 150 57">
+  <rect width="150" height="57" fill="#f4eee2"/>
+  <path d="M8 39 29 20l21 19v14H8z" fill="#dcefe7" stroke="#245454" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M8 39h42M29 20v33M17 31v22M41 31v22" fill="none" stroke="#5e8d83" stroke-width="2"/>
+  <path d="M22 53V39h14v14" fill="#f4eee2" stroke="#245454" stroke-width="2"/>
+  <path d="M29 40c0-9 1-14 4-19M31 34c-8 0-11-4-12-10 7 0 11 3 12 10zM34 29c1-7 5-10 11-11 0 7-4 10-11 11z" fill="#4ba17b" stroke="#245454" stroke-width="1.5" stroke-linejoin="round"/>
+  <text x="65" y="35" fill="#245454" font-family="Microsoft YaHei, Segoe UI, sans-serif" font-size="18" font-weight="600">成长温室</text>
+</svg>

@@ -41,6 +41,7 @@ const useLanguage = () => useContext(LanguageContext);
 const text = (_language: Language, zh: string, _en: string) => zh;
 const UNIT = 25;
 const WATER_DROP_INTERVAL = 60 * 60 * 1000;
+const PATINA_RELEASES_URL = "https://github.com/Ceceliaee/patina/releases";
 const plantKinds: PlantKind[] = ["sprout", "fern", "flower", "cactus"];
 const today = () => new Date().toLocaleDateString("sv-SE");
 const monday = (date = new Date()) => {
@@ -357,9 +358,18 @@ export default function App() {
     let current: Source | null = null;
     try {
       current = await sourceSnapshot(path);
+      if (!current.installed) {
+        if (requestId !== syncRequest.current) return;
+        setSource(current);
+        setSessions([]);
+        setLastSyncedAt(null);
+        return;
+      }
       if (!current.available) {
         if (requestId !== syncRequest.current) return;
         setSource(current);
+        setSessions([]);
+        setLastSyncedAt(null);
         return;
       }
       const nextSessions = await sessionSnapshot(0, Date.now(), current.databasePath);
@@ -451,7 +461,7 @@ export default function App() {
   return <LanguageContext.Provider value={language}><div className="app-shell">
     <aside className="sidebar"><div className="brand"><div className="brand-mark"><Sprout size={20} /></div><div><strong>成长温室</strong><span>{text(language, "学习计划", "LEARNING SPACE")}</span></div></div>
       <nav><button className={view === "greenhouse" ? "active" : ""} onClick={() => go("greenhouse")}><Leaf size={18} /> {text(language, "我的温室", "My Greenhouse")}</button><button className={view === "garden" ? "active" : ""} onClick={() => go("garden")}><Trees size={18} /> {text(language, "成长温室", "Growth Greenhouse")} <b>{completed.length}</b></button><button className={view === "rewards" ? "active" : ""} onClick={() => go("rewards")}><Gift size={18} /> {text(language, "奖励", "Reward Shelf")} <b>{formatPoints(totalPoints)}</b></button></nav>
-      <div className="sidebar-bottom"><div className="patina-status"><i className={source?.available ? "online" : ""} /><div><strong>{source?.available ? "Patina " + text(language, "已连接", "connected") : "Patina " + text(language, "未连接", "disconnected")}</strong><span>{source?.available ? text(language, "正在读取活动", "Tracking automatically") : text(language, "等待连接", "Waiting for data source")}</span></div></div><button className="settings-link" onClick={() => go("settings")}><Settings2 size={17} /> {text(language, "数据源", "Data Source")}</button></div>
+      <div className="sidebar-bottom"><div className="patina-status"><i className={source?.available && source.installed ? "online" : ""} /><div><strong>{source?.available && source.installed ? "Patina " + text(language, "已连接", "connected") : source && !source.installed ? "需要安装 Patina" : "Patina " + text(language, "未连接", "disconnected")}</strong><span>{source?.available && source.installed ? text(language, "正在读取活动", "Tracking automatically") : source && !source.installed ? "前往数据源查看安装方式" : text(language, "等待连接", "Waiting for data source")}</span></div></div><button className="settings-link" onClick={() => go("settings")}><Settings2 size={17} /> {text(language, "数据源", "Data Source")}</button></div>
     </aside>
       <main className="main"><header className="topbar"><div><span className="breadcrumb"><button className="breadcrumb-link" onClick={() => go("greenhouse")}>{text(language, "我的空间", "My Space")}</button><ChevronRight size={14} /><button className="breadcrumb-link" onClick={() => go(view)}>{pageName}</button></span><h1>{pageTitle}</h1></div><div className="top-actions">{view === "greenhouse" ? <div className="points"><Droplets size={17} /><strong>{formatPoints(totalPoints)}</strong><span>水滴</span></div> : null}<div className="menu-wrap"><button className="menu-button" title={text(language, "打开菜单", "Open menu")} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>{menuOpen ? <div className="menu-popover"><button onClick={() => go("greenhouse")}><Leaf size={15} /> {text(language, "我的温室", "My Greenhouse")}</button><button onClick={() => go("garden")}><Trees size={15} /> {text(language, "成长温室", "Growth Greenhouse")}</button><button onClick={() => go("rewards")}><Gift size={15} /> {text(language, "奖励", "Reward Shelf")}</button><button onClick={() => go("settings")}><Settings2 size={15} /> {text(language, "数据源", "Data Source")}</button></div> : null}</div></div></header>
       {error ? <div className="alert"><CircleHelp size={16} /> {error}<button onClick={() => setError("")}><X size={15} /></button></div> : null}
@@ -503,12 +513,15 @@ function EmptyState({ onClick }: { onClick: () => void }) { const language = use
  function MiniRewards({ rewards, points, onOpen }: { rewards: Reward[]; points: number; onOpen: () => void }) { const language = useLanguage(); return <section className="panel mini-rewards"><div className="panel-heading"><div><span className="section-label">{text(language, "奖励", "REWARD SHELF")}</span><h2>{text(language, "奖励", "Reward shelf")}</h2></div><button className="text-button" onClick={onOpen}>{text(language, "查看全部", "View all")} <ChevronRight size={15} /></button></div>{rewards.slice(0, 2).map((reward) => <div className="mini-reward" key={reward.id}><Gift size={17} /><div><strong>{reward.name}</strong><span>{reward.annual ? text(language, "年度奖励", "Annual reward") : text(language, "可兑换奖励", "Something to look forward to")}</span></div><b>{reward.redeemed ? text(language, "已兑换", "Redeemed") : `${formatPoints(reward.cost)} 水滴`}</b></div>)}<div className="mini-points"><Droplets size={16} /> 可用 <strong>{formatPoints(points)} 水滴</strong></div></section>; }
  function Rewards({ rewards, points, onAdd, onRedeem }: { rewards: Reward[]; points: number; onAdd: () => void; onRedeem: (id: string) => void }) { const language = useLanguage(); return <div className="page-stack"><div className="page-intro"><span className="section-label">{text(language, "奖励", "REWARD SHELF")}</span><h2>{text(language, "兑换奖励", "Redeem rewards")}</h2><p>用学习获得的水滴，兑换你设定的奖励。</p><div className="big-points"><Droplets size={22} /><strong>{formatPoints(points)}</strong><span>可用水滴</span></div><button className="primary" onClick={onAdd}><Plus size={16} /> {text(language, "添加奖励", "Add reward")}</button></div><section className="panel reward-list">{rewards.map((reward) => <div className="reward-row" key={reward.id}><div className="reward-icon"><Gift size={20} /></div><div><strong>{reward.name}</strong><span>{reward.annual ? text(language, "年度奖励", "Annual reward") : text(language, "普通奖励", "A small reward")}</span></div><button className="secondary" disabled={reward.redeemed || points < reward.cost} onClick={() => onRedeem(reward.id)}>{reward.redeemed ? <><Check size={14} /> {text(language, "已兑换", "Redeemed")}</> : `${formatPoints(reward.cost)} 水滴兑换`}</button></div>)}</section></div>; }
  type SettingsProps = { path: string; source: Source | null; sessions: Session[]; syncing: boolean; appCategories: AppCategories; manualLearningDrops: number; onCategoryChange: (appKey: string, category: AppCategory) => void; lastSyncedAt: number | null; onSave: (path: string) => void; onFileSelect: (file: File) => Promise<void> };
- function Settings({ path, source, sessions, syncing, appCategories, manualLearningDrops, onCategoryChange, lastSyncedAt, onSave, onFileSelect }: SettingsProps) {
+  function Settings({ path, source, sessions, syncing, appCategories, manualLearningDrops, onCategoryChange, lastSyncedAt, onSave, onFileSelect }: SettingsProps) {
    const language = useLanguage();
-   const title = source?.available ? (source.installed ? text(language, "Patina 已连接", "Patina connected") : text(language, "已找到 Patina 数据库", "Patina database found")) : text(language, "Patina 未连接", "Patina disconnected");
-   const detail = source?.available ? text(language, `${source.installed ? "正在读取活动记录" : "已找到数据库，未检测到 Patina 程序"} · 最近同步 ${lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : "等待中"}`, `${source.installed ? "Reading automatically" : "History is available, but the Patina app was not found"} · Last sync ${lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : "waiting"}`) : text(language, "请确认 Patina 已安装并有数据", "Make sure Patina is installed and has data");
-   return <div className="settings-wrapper"><div className="settings-sync-strip" role="status"><i className={source?.available ? "online" : ""} /><div><strong>{title}</strong><span>{detail}</span></div></div><SettingsContent path={path} source={source} sessions={sessions} syncing={syncing} appCategories={appCategories} manualLearningDrops={manualLearningDrops} onCategoryChange={onCategoryChange} lastSyncedAt={lastSyncedAt} onSave={onSave} onFileSelect={onFileSelect} /></div>;
- }
+    const title = source?.installed ? (source.available ? text(language, "Patina 已连接", "Patina connected") : text(language, "Patina 已安装，等待数据库", "Patina installed; database not found")) : text(language, "需要安装 Patina", "Patina installation required");
+    const detail = source?.installed ? text(language, `${source.available ? "正在读取活动记录" : "未找到 Patina 数据库"} · 最近同步 ${lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : "等待中"}`, `${source.available ? "Reading automatically" : "Patina database not found"} · Last sync ${lastSyncedAt ? new Date(lastSyncedAt).toLocaleTimeString() : "waiting"}`) : text(language, "成长温室必须依赖 Patina，当前不会独立读取软件使用时间", "Growth Greenhouse requires Patina and does not read software usage independently");
+    return <div className="settings-wrapper"><div className="settings-sync-strip" role="status"><i className={source?.available && source.installed ? "online" : ""} /><div><strong>{title}</strong><span>{detail}</span></div></div>{source && !source.installed ? <PatinaDependencyNotice /> : null}<SettingsContent path={path} source={source} sessions={sessions} syncing={syncing} appCategories={appCategories} manualLearningDrops={manualLearningDrops} onCategoryChange={onCategoryChange} lastSyncedAt={lastSyncedAt} onSave={onSave} onFileSelect={onFileSelect} /></div>;
+  }
+  function PatinaDependencyNotice() {
+    return <section className="patina-dependency" role="alert"><div className="patina-dependency-icon"><Monitor size={18} /></div><div><strong>需要先安装 Patina</strong><p>成长温室依赖 Patina 记录软件前台使用时间，不会独立读取或推测软件使用时长。</p><p>请在 Patina 的 GitHub Releases 页面下载 Windows 安装包中的 <code>*_x64-setup.exe</code> 文件，不要下载 Source code ZIP。</p><a href={PATINA_RELEASES_URL} target="_blank" rel="noreferrer">打开 Patina GitHub Releases <ChevronRight size={14} /></a></div></section>;
+  }
  function SettingsContent({ path, source, sessions, syncing, appCategories, manualLearningDrops, onCategoryChange, lastSyncedAt, onSave, onFileSelect }: SettingsProps) {
    const language = useLanguage();
    const [value, setValue] = useState(path);
