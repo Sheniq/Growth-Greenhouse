@@ -2,8 +2,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { invoke } from "@tauri-apps/api/core";
 import {
   BarChart3, Check, ChevronLeft, ChevronRight, CircleHelp, Clock3, Droplets, Flower2,
-  FolderOpen, Gift, Leaf, Menu, Monitor, Plus, RefreshCw, Settings2, Sprout, Target, Trash2, TrendingUp, Trees, X,
+  FolderOpen, Gift, Leaf, Maximize2, Menu, Minimize2, Minus, Monitor, Plus, RefreshCw, Settings2, Sprout, Target, Trash2, TrendingUp, Trees, X,
 } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import Widget from "./Widget";
 
 type View = "greenhouse" | "garden" | "rewards" | "settings";
@@ -495,15 +496,40 @@ export default function App() {
   const pageTitle = view === "greenhouse" ? text(language, "今天的学习", "Today's learning") : view === "garden" ? text(language, "成长温室", "Growth Greenhouse") : view === "rewards" ? text(language, "兑换奖励", "Redeem rewards") : text(language, "数据源", "Data Source");
 
   return <LanguageContext.Provider value={language}><div className="app-shell">
+    <WindowBar />
     <aside className="sidebar"><div className="brand"><div className="brand-mark"><Sprout size={20} /></div><div><strong>成长温室</strong><span>{text(language, "学习计划", "LEARNING SPACE")}</span></div></div>
       <nav><button className={view === "greenhouse" ? "active" : ""} onClick={() => go("greenhouse")}><Leaf size={18} /> {text(language, "我的温室", "My Greenhouse")}</button><button className={view === "garden" ? "active" : ""} onClick={() => go("garden")}><Trees size={18} /> {text(language, "成长温室", "Growth Greenhouse")} <b>{completed.length}</b></button><button className={view === "rewards" ? "active" : ""} onClick={() => go("rewards")}><Gift size={18} /> {text(language, "奖励", "Reward Shelf")} <b>{formatPoints(totalPoints)}</b></button></nav>
-      <div className="sidebar-bottom"><div className="patina-status"><i className={source?.available && source.installed ? "online" : ""} /><div><strong>{source?.available && source.installed ? "Patina " + text(language, "已连接", "connected") : source && !source.installed ? "需要安装 Patina" : "Patina " + text(language, "未连接", "disconnected")}</strong><span>{source?.available && source.installed ? text(language, "正在读取活动", "Tracking automatically") : source && !source.installed ? "前往数据源查看安装方式" : text(language, "等待连接", "Waiting for data source")}</span></div></div><button className="settings-link" onClick={() => go("settings")}><Settings2 size={17} /> {text(language, "数据源", "Data Source")}</button></div>
+      <div className="sidebar-source"><button className={"settings-link" + (view === "settings" ? " active" : "")} onClick={() => go("settings")}><Settings2 size={17} /> {text(language, "数据源", "Data Source")}</button><div className="patina-status"><i className={source?.available && source.installed ? "online" : ""} /><div><strong>{source?.available && source.installed ? "Patina " + text(language, "已连接", "connected") : source && !source.installed ? "需要安装 Patina" : "Patina " + text(language, "未连接", "disconnected")}</strong><span>{source?.available && source.installed ? text(language, "正在读取活动", "Tracking automatically") : source && !source.installed ? "前往数据源查看安装方式" : text(language, "等待连接", "Waiting for data source")}</span></div></div></div>
+      <div className="sidebar-bottom"><span>本地运行 · 依赖 Patina</span></div>
     </aside>
       <main className="main"><header className="topbar"><div><span className="breadcrumb"><button className="breadcrumb-link" onClick={() => go("greenhouse")}>{text(language, "我的空间", "My Space")}</button><ChevronRight size={14} /><button className="breadcrumb-link" onClick={() => go(view)}>{pageName}</button></span><h1>{pageTitle}</h1></div><div className="top-actions">{view === "greenhouse" ? <div className="points"><Droplets size={17} /><strong>{formatPoints(totalPoints)}</strong><span>水滴</span></div> : null}<div className="menu-wrap"><button className="menu-button" title={text(language, "打开菜单", "Open menu")} aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>{menuOpen ? <X size={19} /> : <Menu size={19} />}</button>{menuOpen ? <div className="menu-popover"><button onClick={() => go("greenhouse")}><Leaf size={15} /> {text(language, "我的温室", "My Greenhouse")}</button><button onClick={() => go("garden")}><Trees size={15} /> {text(language, "成长温室", "Growth Greenhouse")}</button><button onClick={() => go("rewards")}><Gift size={15} /> {text(language, "奖励", "Reward Shelf")}</button><button onClick={() => go("settings")}><Settings2 size={15} /> {text(language, "数据源", "Data Source")}</button></div> : null}</div></div></header>
       {error ? <div className="alert"><CircleHelp size={16} /> {error}<button onClick={() => setError("")}><X size={15} /></button></div> : null}
       {view === "greenhouse" ? <><section className="welcome-banner"><div><span className="section-label">{text(language, "本周进度", "THIS WEEK")}</span><h2>{active.length ? text(language, "一点一点，目标会长大", "Your greenhouse is growing") : text(language, "先种下第一个目标", "Plant your first goal")}</h2><p>{active.length ? text(language, `有 ${active.length} 个进行中的目标。每 ${UNIT} 分钟增加 1 个成长单位。`, `Caring for ${active.length} goal${active.length === 1 ? "" : "s"}. Every ${UNIT} minutes leaves one growth unit.`) : text(language, "从一件你真正想学的事开始。", "Start with something you genuinely want to learn.")}</p><div className="banner-actions"><button className="primary" onClick={() => setModal("goal")}><Plus size={16} /> {text(language, "创建目标", "Plant a goal")}</button><button className="ghost" onClick={() => setModal("record")} disabled={!goals.length}><Clock3 size={16} /> {text(language, "记录学习", "Log learning")}</button></div></div><div className="banner-scene"><div className="sun" /><div className="cloud cloud-a" /><div className="cloud cloud-b" /><div className="ground" /><div className="scene-glass glass-a" /><div className="scene-glass glass-b" /><Plant kind={active[0] ? plantKindFor(active[0]) : "flower"} units={active[0] ? stats.get(active[0].id)?.units ?? 0 : 15} progress={active[0] ? plantProgress(stats.get(active[0].id)?.total ?? 0) : 0.5} /></div></section><div className="section-heading"><div><span className="section-label">{text(language, "学习目标", "YOUR PLANTS")}</span><h2>{text(language, "进行中的目标", "Growing now")}</h2></div><button className="text-button" onClick={() => setModal("goal")}><Plus size={16} /> {text(language, "添加目标", "Add goal")}</button></div><section className="plant-grid">{active.length ? active.map((goal) => <GoalCard key={goal.id} goal={goal} stat={stats.get(goal.id)!} selected={selected?.id === goal.id} onClick={() => setSelectedId(goal.id)} />) : <EmptyState onClick={() => setModal("goal")} />}</section>{selected ? <Detail goal={selected} stat={stats.get(selected.id)!} onRecord={() => setModal("record")} onPause={() => setGoals((current) => current.map((goal) => goal.id === selected.id ? { ...goal, status: goal.status === "paused" ? "active" : "paused" } : goal))} onComplete={completeSelected} onDelete={() => setDeleteTarget(selected)} /> : null}<section className="lower-grid"><Garden completed={completed} onOpen={() => go("garden")} /><MiniRewards rewards={rewards} points={totalPoints} onOpen={() => go("rewards")} /></section></> : view === "garden" ? <CompletedGarden completed={completed} selectedId={gardenSelectedId} onSelect={setGardenSelectedId} onBack={() => go("greenhouse")} stats={stats} onDelete={(goal) => setDeleteTarget(goal)} /> : view === "rewards" ? <Rewards rewards={rewards} points={totalPoints} onAdd={() => setModal("reward")} onRedeem={(id) => { const reward = rewards.find((item) => item.id === id); if (reward && !reward.redeemed && totalPoints >= reward.cost) setRewards((current) => current.map((item) => item.id === id ? { ...item, redeemed: true } : item)); }} /> : <Settings path={path} source={source} sessions={sessions} syncing={syncing} appCategories={appCategories} manualLearningDrops={manualLearningDrops} onCategoryChange={(appKey, category) => setAppCategories((current) => ({ ...current, [appKey]: category }))} lastSyncedAt={lastSyncedAt} onSave={savePath} onFileSelect={selectDatabaseFile} />}
     </main>{modal ? <Modal onClose={() => setModal(null)}>{modal === "goal" ? <GoalForm sessions={sessions} goals={goals} onSubmit={addGoal} /> : modal === "record" ? <RecordForm goals={goals} selectedId={selected?.id} onSubmit={addRecord} /> : <RewardForm onSubmit={addReward} />}</Modal> : null}{deleteTarget ? <Modal onClose={() => setDeleteTarget(null)}><DeleteConfirmation goal={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={deleteGoal} /></Modal> : null}
   </div></LanguageContext.Provider>;
+}
+
+function WindowBar() {
+  const isNative = "__TAURI_INTERNALS__" in window;
+  const [maximized, setMaximized] = useState(false);
+  useEffect(() => {
+    if (!isNative) return;
+    let mounted = true;
+    void getCurrentWindow().isMaximized().then((value) => { if (mounted) setMaximized(value); });
+    return () => { mounted = false; };
+  }, [isNative]);
+  const minimize = () => { if (isNative) void getCurrentWindow().minimize(); };
+  const toggleMaximize = () => {
+    if (!isNative) return;
+    const current = getCurrentWindow();
+    void current.toggleMaximize().then(() => current.isMaximized()).then(setMaximized);
+  };
+  const close = () => { if (isNative) void getCurrentWindow().close(); };
+  return <div className="window-bar">
+    <div className="window-brand"><div className="window-brand-mark"><Sprout size={15} /></div><strong>成长温室</strong></div>
+    <div className="window-drag-region" data-tauri-drag-region onDoubleClick={toggleMaximize} />
+    {isNative ? <div className="window-controls"><button onClick={minimize} title="最小化" aria-label="最小化"><Minus size={15} /></button><button onClick={toggleMaximize} title={maximized ? "还原" : "最大化"} aria-label={maximized ? "还原" : "最大化"}>{maximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}</button><button className="window-close" onClick={close} title="关闭" aria-label="关闭"><X size={15} /></button></div> : null}
+  </div>;
 }
 
 function UsageTrendChart({ buckets, selectedKey, onSelect, compact = false }: { buckets: UsageBucket[]; selectedKey: string; onSelect: (key: string) => void; compact?: boolean }) {

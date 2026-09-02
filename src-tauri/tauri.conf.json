@@ -12,7 +12,7 @@
   },
   "app": {
     "windows": [
-      { "label": "main", "title": "成长温室", "width": 1180, "height": 820, "minWidth": 920, "minHeight": 680, "resizable": true, "url": "index.html" },
+      { "label": "main", "title": "成长温室", "width": 1180, "height": 820, "minWidth": 920, "minHeight": 680, "decorations": false, "shadow": true, "resizable": true, "url": "index.html" },
       { "label": "widget", "title": "成长温室", "width": 310, "height": 76, "x": 32, "y": 32, "decorations": false, "transparent": true, "resizable": false, "alwaysOnTop": false, "skipTaskbar": true, "focus": false, "visible": true, "url": "index.html#widget" }
     ],
     "security": { "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost" }
