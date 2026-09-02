@@ -350,10 +350,15 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .usage-heading h2 { margin: 8px 0 5px; color: #2d533e; font-size: 20px; font-weight: 600; }
 .usage-heading p { margin: 0; color: #78947d; font-size: 11px; }
 .usage-range-control { display: grid; gap: 11px; margin-top: 22px; padding-bottom: 15px; border-bottom: 1px solid #e4efda; }
+.usage-control-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
 .usage-range-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
 .usage-range-tabs button { min-height: 29px; padding: 0 10px; color: #6e8d73; background: transparent; border: 1px solid transparent; border-radius: 7px; font-size: 10px; }
 .usage-range-tabs button:hover { color: var(--app-accent-hover); background: #f3faed; }
 .usage-range-tabs button.active { color: #fff; background: var(--app-accent); border-color: var(--app-accent); }
+.usage-display-tabs { display: inline-flex; align-items: center; gap: 3px; flex: 0 0 auto; padding: 3px; color: #91a593; background: #f3f8ef; border: 1px solid #e0ecd8; border-radius: 7px; font-size: 10px; }
+.usage-display-tabs > span { padding: 0 5px; }
+.usage-display-tabs button { min-height: 25px; padding: 0 9px; color: #78947d; background: transparent; border: 0; border-radius: 5px; font-size: 10px; }
+.usage-display-tabs button.active { color: #fff; background: var(--app-info); }
 .usage-custom-range { display: flex; align-items: end; gap: 10px; }
 .usage-custom-range label { display: grid; gap: 5px; color: #78947d; font-size: 10px; font-weight: 600; }
 .usage-custom-range input { min-height: 31px; padding: 0 8px; color: #4c6e57; background: #fefff9; border: 1px solid #cfe4c1; border-radius: 7px; outline: none; font-size: 10px; }
@@ -388,6 +393,42 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .usage-chart-track { display: flex; align-items: end; width: 100%; height: 100%; overflow: hidden; background: #f1f6ed; border-radius: 5px 5px 3px 3px; }
 .usage-chart-track i { display: block; width: 100%; min-height: 0; background: var(--app-info); border-radius: 5px 5px 2px 2px; transition: height .45s ease; }
 .usage-chart-column span { overflow: hidden; color: #96a696; font-size: 9px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.usage-line-chart-wrap { margin-top: 14px; }
+.usage-line-chart { height: 198px; overflow: hidden; background: linear-gradient(180deg, rgba(238,247,239,.4), rgba(255,255,255,0)); border-radius: 8px; }
+.usage-line-chart-wrap.compact .usage-line-chart { height: 170px; }
+.usage-line-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.usage-chart-gridline { stroke: #e7f0e4; stroke-width: 1; stroke-dasharray: 4 7; }
+.usage-chart-area { fill: rgba(60,142,196,.12); }
+.usage-chart-line { fill: none; stroke: var(--app-info); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.usage-line-chart circle { fill: #fff; stroke: var(--app-info); stroke-width: 2; cursor: pointer; outline: none; transition: r .18s ease, fill .18s ease; }
+.usage-line-chart circle:hover, .usage-line-chart circle:focus, .usage-line-chart circle.selected { fill: var(--app-info); stroke: #fff; stroke-width: 2.5; }
+.usage-axis-labels { display: grid; grid-template-columns: repeat(var(--usage-columns), minmax(0, 1fr)); gap: 0; margin: 7px 18px 0 28px; }
+.usage-axis-labels span { overflow: hidden; color: #96a696; font-size: 9px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+.usage-selected-bucket { display: flex; align-items: baseline; gap: 10px; min-height: 42px; margin-top: 12px; padding: 10px 12px; background: #f5f9f2; border: 1px solid #e3eee0; border-radius: 7px; }
+.usage-selected-bucket span { color: #66866b; font-size: 10px; }
+.usage-selected-bucket strong { color: #2877aa; font-size: 14px; font-variant-numeric: tabular-nums; }
+.usage-selected-bucket small { margin-left: auto; color: #98aa99; font-size: 9px; }
+.usage-detail-list { display: grid; gap: 4px; max-height: 206px; margin-top: 12px; overflow-y: auto; padding-right: 3px; }
+.usage-detail-list.compact { max-height: 138px; }
+.usage-detail-row { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 9px; min-height: 27px; padding: 0 7px; color: #7f9681; background: transparent; border: 1px solid transparent; border-radius: 6px; text-align: left; }
+.usage-detail-row:hover, .usage-detail-row.selected { color: #4d7658; background: #f6faf3; border-color: #e1edde; }
+.usage-detail-row > span { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.usage-detail-row > i { display: block; height: 4px; overflow: hidden; background: #eaf3e4; border-radius: 4px; }
+.usage-detail-row > i em { display: block; height: 100%; min-width: 0; background: var(--app-info); border-radius: inherit; }
+.usage-detail-row strong { color: #4c895c; font-size: 9px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.usage-total-highlight { display: grid; gap: 5px; margin-top: 14px; padding: 18px 16px; background: #f5f9f2; border: 1px solid #e3eee0; border-radius: 8px; }
+.usage-total-highlight span { color: #78947d; font-size: 10px; }
+.usage-total-highlight strong { color: #2877aa; font-size: 27px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.usage-total-highlight small { color: #98aa99; font-size: 9px; }
+.usage-total-breakdown { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 18px; margin-top: 13px; }
+.usage-total-breakdown > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; padding: 7px 0; border-bottom: 1px solid #edf3e8; }
+.usage-total-breakdown span { overflow: hidden; color: #66866b; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.usage-total-breakdown strong { color: #4c895c; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.usage-total-breakdown small { grid-column: 1 / -1; color: #9aaa9b; font-size: 9px; }
+.usage-app-trend-metrics { display: flex; gap: 17px; margin: 13px 0 0; }
+.usage-app-trend-metrics > div { display: grid; gap: 4px; }
+.usage-app-trend-metrics span { color: #91a593; font-size: 9px; }
+.usage-app-trend-metrics strong { color: #2877aa; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .usage-insight-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 25px; }
 .usage-insight-grid .usage-section-block { border-top: 0; }
 .usage-app-list { display: grid; gap: 5px; margin-top: 12px; }
@@ -445,10 +486,15 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 @media (max-width: 760px) {
   .software-usage { padding: 20px 16px 5px; }
   .usage-heading { display: grid; }
+  .usage-control-row { align-items: stretch; flex-direction: column; }
+  .usage-display-tabs { align-self: flex-start; }
   .usage-metrics { grid-template-columns: 1fr 1fr; }
   .usage-metrics > div:first-child { grid-column: 1 / -1; }
   .usage-custom-range { align-items: stretch; flex-direction: column; }
   .usage-custom-range > span { display: none; }
   .usage-app-row { grid-template-columns: 1fr; gap: 3px; padding-right: 5px; }
   .usage-app-category { width: 100%; }
+  .usage-selected-bucket { align-items: flex-start; flex-wrap: wrap; }
+  .usage-selected-bucket small { width: 100%; margin-left: 0; }
+  .usage-total-breakdown { grid-template-columns: 1fr; }
 }

@@ -68,14 +68,18 @@ const write = (key: string, value: unknown) => localStorage.setItem(key, JSON.st
 const minutes = (value: number, language: Language = "zh") => value < 60 ? `${Math.round(value)} ${text(language, "分钟", "min")}` : `${Math.floor(value / 60)} ${text(language, "小时", "hr")}${Math.round(value % 60) ? ` ${Math.round(value % 60)} ${text(language, "分钟", "min")}` : ""}`;
 const formatPoints = (value: number) => value.toFixed(1);
 const formatSignedPoints = (value: number) => `${value > 0 ? "+" : ""}${formatPoints(value)}`;
+const MAX_SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+type TimeRange = { from: number; to: number };
 const categoryWaterDrops = (sessions: Session[], categories: AppCategories) => {
-  let learningMilliseconds = 0;
-  let gameMilliseconds = 0;
+  const categoryRanges: Record<"learning" | "game", TimeRange[]> = { learning: [], game: [] };
   for (const session of sessions) {
     const category = categories[session.exeName.toLowerCase()] ?? "neutral";
-    if (category === "learning") learningMilliseconds += sessionDuration(session) * 60000;
-    if (category === "game") gameMilliseconds += sessionDuration(session) * 60000;
+    if (category !== "learning" && category !== "game") continue;
+    const interval = sessionInterval(session);
+    if (interval) categoryRanges[category].push(interval);
   }
+  const learningMilliseconds = mergeTimeRanges(categoryRanges.learning).reduce((total, range) => total + range.to - range.from, 0);
+  const gameMilliseconds = mergeTimeRanges(categoryRanges.game).reduce((total, range) => total + range.to - range.from, 0);
   const learningDrops = Math.floor(learningMilliseconds / WATER_DROP_INTERVAL);
   const gameDrops = Math.floor(gameMilliseconds / WATER_DROP_INTERVAL);
   return { learningDrops, gameDrops, delta: learningDrops - gameDrops };
@@ -99,21 +103,28 @@ const stage = (units: number, completed = false, language: Language = "zh") => c
 const plantKindFor = (goal: Goal) => goal.plantKind ?? plantKinds[Array.from(goal.id).reduce((sum, char) => sum + char.charCodeAt(0), 0) % plantKinds.length];
 const dateLabel = (value?: string, language: Language = "zh") => value ? new Date(`${value}T00:00:00`).toLocaleDateString(language === "en" ? "en-US" : "zh-CN", { year: "numeric", month: "long", day: "numeric" }) : text(language, "尚未记录", "Not recorded");
 const sessionTime = (value: number, language: Language = "zh") => new Date(value).toLocaleString(language === "en" ? "en-US" : "zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
-const sessionEnd = (session: Session, now = Date.now()) => {
-  if (session.endTime !== null && session.endTime > session.startTime) return session.endTime;
-  if (session.durationMs !== null && session.durationMs > 0) return session.startTime + session.durationMs;
-  return Math.max(now, session.startTime);
+const sessionInterval = (session: Session, now = Date.now()): TimeRange | null => {
+  const start = Number(session.startTime);
+  if (!Number.isFinite(start) || start <= 0) return null;
+  const storedDuration = Number(session.durationMs);
+  const end = Number(session.endTime);
+  const endedDuration = Number.isFinite(end) && end > start ? end - start : 0;
+  let duration = Number.isFinite(storedDuration) && storedDuration > 0 ? storedDuration : endedDuration;
+  // Patina stores duration in milliseconds. If a stale row reports more time
+  // than its recorded end boundary, the bounded interval is the reliable value.
+  if (endedDuration > 0) duration = Math.min(duration, endedDuration);
+  if (!duration && session.endTime === null && session.durationMs === null) duration = Math.max(0, now - start);
+  if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_SESSION_DURATION_MS) return null;
+  return { from: start, to: start + duration };
 };
-const sessionDuration = (session: Session) => Math.max(0, sessionEnd(session) - session.startTime) / 60000;
-const formatPatinaDuration = (milliseconds: number) => {
-  const seconds = Math.max(0, Math.floor(milliseconds / 1000));
-  if (seconds >= 3600) {
-    const hours = Math.floor(seconds / 3600);
-    const remainderMinutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h${remainderMinutes ? ` ${remainderMinutes}m` : ""}`;
-  }
-  if (seconds >= 60) return `${Math.floor(seconds / 60)}m`;
-  return `${seconds}s`;
+const sessionEnd = (session: Session, now = Date.now()) => sessionInterval(session, now)?.to ?? Number(session.startTime);
+const sessionDuration = (session: Session) => Math.max(0, sessionEnd(session) - Number(session.startTime)) / 60000;
+const formatUsageDuration = (milliseconds: number) => {
+  const totalMinutes = Math.max(0, Math.floor(milliseconds / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const remainderMinutes = totalMinutes % 60;
+  if (hours > 0) return `${hours}h${remainderMinutes ? ` ${remainderMinutes}m` : ""}`;
+  return `${remainderMinutes}m`;
 };
 
 function Plant({ units, completed = false, small = false, kind = "sprout", progress }: { units: number; completed?: boolean; small?: boolean; kind?: PlantKind; progress?: number }) {
@@ -132,26 +143,29 @@ function Plant({ units, completed = false, small = false, kind = "sprout", progr
   </div>;
 }
 
-function unionMinutes(sessions: Session[], from: number, to: number) {
-  const ranges = sessions.map((session) => ({
-    from: Math.max(session.startTime, from),
-    to: Math.min(sessionEnd(session, to), to),
-  })).filter((range) => range.to > range.from).sort((a, b) => a.from - b.from);
-  let total = 0;
-  let current: { from: number; to: number } | undefined;
-  for (const range of ranges) {
-    if (!current) current = range;
-    else if (range.from <= current.to) current.to = Math.max(current.to, range.to);
-    else {
-      total += current.to - current.from;
-      current = range;
-    }
+function mergeTimeRanges(ranges: TimeRange[]) {
+  const sorted = ranges.filter((range) => range.to > range.from).sort((a, b) => a.from - b.from);
+  const merged: TimeRange[] = [];
+  for (const range of sorted) {
+    const current = merged[merged.length - 1];
+    if (!current || range.from > current.to) merged.push({ ...range });
+    else current.to = Math.max(current.to, range.to);
   }
-  if (current) total += current.to - current.from;
+  return merged;
+}
+
+function unionMinutes(sessions: Session[], from: number, to: number) {
+  const ranges = sessions.map((session) => {
+    const interval = clippedSession(session, from, to, to);
+    return interval ? { from: interval.start, to: interval.end } : null;
+  }).filter((range): range is TimeRange => range !== null);
+  let total = 0;
+  for (const range of mergeTimeRanges(ranges)) total += range.to - range.from;
   return total / 60000;
 }
 
-type UsageRangeKey = "today" | "recent7" | "recent30" | "recentYear" | "week" | "month" | "year" | "all" | "custom";
+type UsageRangeKey = "today" | "recent7" | "recent30" | "recentYear" | "all" | "custom";
+type UsageDisplayMode = "daily" | "total";
 type UsageBucketMode = "day" | "month";
 type UsageRange = { key: UsageRangeKey; from: number; to: number; mode: UsageBucketMode; label: string };
 type UsageBucket = { key: string; label: string; from: number; to: number; milliseconds: number };
@@ -217,14 +231,8 @@ function usageRange(key: UsageRangeKey, sessions: Session[], customFrom: string,
   } else if (key === "recentYear") {
     const yearAgo = new Date(todayStart); yearAgo.setFullYear(yearAgo.getFullYear() - 1);
     from = yearAgo.getTime(); mode = "month"; label = "近一年";
-  } else if (key === "week") {
-    from = monday(new Date(now)).getTime(); label = "本周";
-  } else if (key === "month") {
-    from = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1).getTime(); label = "本月";
-  } else if (key === "year") {
-    from = new Date(todayStart.getFullYear(), 0, 1).getTime(); mode = "month"; label = "今年";
   } else if (key === "all") {
-    const first = sessions.reduce((minimum, session) => Math.min(minimum, session.startTime), now);
+    const first = sessions.map((session) => sessionInterval(session)?.from).filter((value): value is number => value !== undefined).reduce((minimum, value) => Math.min(minimum, value), now);
     from = first === now ? todayStart.getTime() : localDayStart(first).getTime(); mode = "month"; label = "全部";
   } else if (key === "custom") {
     let startDate = customDate(customFrom, todayStart);
@@ -239,50 +247,68 @@ function usageRange(key: UsageRangeKey, sessions: Session[], customFrom: string,
 }
 
 function clippedSession(session: Session, from: number, to: number, now = Date.now()) {
-  const start = Math.max(from, session.startTime);
-  const end = Math.min(to, sessionEnd(session, now));
+  const interval = sessionInterval(session, now);
+  if (!interval) return null;
+  const start = Math.max(from, interval.from);
+  const end = Math.min(to, interval.to);
   return end > start ? { start, end } : null;
+}
+
+function addRangesToBuckets(ranges: TimeRange[], buckets: UsageBucket[]) {
+  for (const range of ranges) {
+    for (const bucket of buckets) {
+      bucket.milliseconds += Math.max(0, Math.min(range.to, bucket.to) - Math.max(range.from, bucket.from));
+    }
+  }
+}
+
+function totalRangeMilliseconds(ranges: TimeRange[]) {
+  return ranges.reduce((total, range) => total + range.to - range.from, 0);
 }
 
 function softwareUsage(sessions: Session[], key: UsageRangeKey, customFrom: string, customTo: string, categories: AppCategories): SoftwareUsageData {
   const range = usageRange(key, sessions, customFrom, customTo);
   const buckets = usageBuckets(range.from, range.to, range.mode);
-  const activeDays = new Set<string>();
-  const apps = new Map<string, { name: string; exeName: string; milliseconds: number; activeDays: Set<string>; trend: number[] }>();
-  let totalMilliseconds = 0;
+  const clippedRecords: { session: Session; range: TimeRange }[] = [];
   for (const session of sessions) {
     const clipped = clippedSession(session, range.from, range.to);
-    if (!clipped) continue;
-    const milliseconds = clipped.end - clipped.start;
-    totalMilliseconds += milliseconds;
-    addDaysToSet(activeDays, clipped.start, clipped.end);
-    const appKey = session.exeName.toLowerCase() || session.appName.toLowerCase();
-    const app = apps.get(appKey) ?? { name: session.appName || session.exeName, exeName: session.exeName, milliseconds: 0, activeDays: new Set<string>(), trend: new Array<number>(buckets.length).fill(0) };
-    app.milliseconds += milliseconds;
-    addDaysToSet(app.activeDays, clipped.start, clipped.end);
-    buckets.forEach((bucket, index) => {
-      const overlap = Math.max(0, Math.min(clipped.end, bucket.to) - Math.max(clipped.start, bucket.from));
-      bucket.milliseconds += overlap;
-      app.trend[index] += overlap;
-    });
+    if (clipped) clippedRecords.push({ session, range: { from: clipped.start, to: clipped.end } });
+  }
+
+  // Patina sessions should be sequential, but merging here keeps malformed or overlapping rows from inflating totals.
+  const overallRanges = mergeTimeRanges(clippedRecords.map((record) => record.range));
+  const totalMilliseconds = totalRangeMilliseconds(overallRanges);
+  const activeDays = new Set<string>();
+  for (const rangeItem of overallRanges) addDaysToSet(activeDays, rangeItem.from, rangeItem.to);
+  addRangesToBuckets(overallRanges, buckets);
+
+  const apps = new Map<string, { name: string; exeName: string; ranges: TimeRange[] }>();
+  for (const record of clippedRecords) {
+    const appKey = record.session.exeName.toLowerCase() || record.session.appName.toLowerCase();
+    const app = apps.get(appKey) ?? { name: record.session.appName || record.session.exeName, exeName: record.session.exeName, ranges: [] };
+    app.ranges.push(record.range);
     apps.set(appKey, app);
   }
-  const averageMilliseconds = totalMilliseconds / Math.max(1, buckets.length);
   const appList = Array.from(apps.entries()).map(([appKey, app]) => {
+    const appRanges = mergeTimeRanges(app.ranges);
+    const milliseconds = totalRangeMilliseconds(appRanges);
+    const appActiveDays = new Set<string>();
+    for (const rangeItem of appRanges) addDaysToSet(appActiveDays, rangeItem.from, rangeItem.to);
+    const trend = new Array<number>(buckets.length).fill(0);
+    for (const rangeItem of appRanges) {
+      buckets.forEach((bucket, index) => { trend[index] += Math.max(0, Math.min(rangeItem.to, bucket.to) - Math.max(rangeItem.from, bucket.from)); });
+    }
     const category = categories[appKey] ?? "neutral";
-    const wholeHours = Math.floor(app.milliseconds / WATER_DROP_INTERVAL);
-    return { key: appKey, name: app.name, exeName: app.exeName, category, milliseconds: app.milliseconds, percentage: totalMilliseconds ? Math.round(app.milliseconds / totalMilliseconds * 100) : 0, activeDays: app.activeDays.size, trend: app.trend, waterDrops: category === "learning" ? wholeHours : category === "game" ? -wholeHours : 0 };
+    const wholeHours = Math.floor(milliseconds / WATER_DROP_INTERVAL);
+    return { key: appKey, name: app.name, exeName: app.exeName, category, milliseconds, percentage: totalMilliseconds ? Math.round(milliseconds / totalMilliseconds * 100) : 0, activeDays: appActiveDays.size, trend, waterDrops: category === "learning" ? wholeHours : category === "game" ? -wholeHours : 0 };
   }).filter((app) => app.milliseconds > 0).sort((a, b) => b.milliseconds - a.milliseconds);
   const rangeDays = Math.max(1, Math.ceil((range.to - range.from) / 86400000));
   const heatmapFrom = rangeDays > 371 ? addLocalDay(localDayStart(range.to), -364).getTime() : range.from;
   const heatmap = usageBuckets(heatmapFrom, range.to, "day");
-  for (const session of sessions) {
-    const clipped = clippedSession(session, heatmapFrom, range.to);
-    if (!clipped) continue;
-    heatmap.forEach((bucket) => { bucket.milliseconds += Math.max(0, Math.min(clipped.end, bucket.to) - Math.max(clipped.start, bucket.from)); });
-  }
-  const recentSessions = sessions.filter((session) => clippedSession(session, range.from, range.to)).sort((a, b) => b.startTime - a.startTime || b.id - a.id).slice(0, 12);
-  return { range, totalMilliseconds, averageMilliseconds, activeDays: activeDays.size, buckets, apps: appList, heatmap, recentSessions };
+  const heatmapRanges = mergeTimeRanges(sessions.map((session) => clippedSession(session, heatmapFrom, range.to)).filter((value): value is { start: number; end: number } => value !== null).map((value) => ({ from: value.start, to: value.end })));
+  addRangesToBuckets(heatmapRanges, heatmap);
+  const recentSessions = clippedRecords.map((record) => record.session).sort((a, b) => b.startTime - a.startTime || b.id - a.id).slice(0, 12);
+  return { range, totalMilliseconds, averageMilliseconds: totalMilliseconds / Math.max(1, buckets.length), activeDays: activeDays.size, buckets, apps: appList, heatmap, recentSessions };
 }
 
 function goalStats(goal: Goal, sessions: Session[], records: ManualRecord[]) {
@@ -480,39 +506,77 @@ export default function App() {
   </div></LanguageContext.Provider>;
 }
 
+function UsageTrendChart({ buckets, selectedKey, onSelect, compact = false }: { buckets: UsageBucket[]; selectedKey: string; onSelect: (key: string) => void; compact?: boolean }) {
+  const maxValue = Math.max(1, ...buckets.map((bucket) => bucket.milliseconds));
+  const width = 1000;
+  const height = compact ? 170 : 198;
+  const top = 14;
+  const bottom = height - 30;
+  const left = 28;
+  const right = width - 18;
+  const points = buckets.map((bucket, index) => {
+    const x = buckets.length === 1 ? width / 2 : left + index * (right - left) / (buckets.length - 1);
+    const y = bottom - bucket.milliseconds / maxValue * (bottom - top);
+    return { bucket, x, y };
+  });
+  const linePath = points.map((point, index) => (index === 0 ? "M" : "L") + " " + point.x + " " + point.y).join(" ");
+  const areaPath = points.length ? linePath + " L " + points[points.length - 1].x + " " + bottom + " L " + points[0].x + " " + bottom + " Z" : "";
+  const labelStep = buckets.length > 14 ? Math.ceil(buckets.length / 8) : 1;
+  return <div className={"usage-line-chart-wrap" + (compact ? " compact" : "")}>
+    <div className="usage-line-chart">
+      <svg viewBox={"0 0 " + width + " " + height} role="img" aria-label={compact ? "应用每日使用趋势" : "活动每日使用趋势"} preserveAspectRatio="none">
+        <line className="usage-chart-gridline" x1={left} x2={right} y1={top} y2={top} />
+        <line className="usage-chart-gridline" x1={left} x2={right} y1={(top + bottom) / 2} y2={(top + bottom) / 2} />
+        <line className="usage-chart-gridline" x1={left} x2={right} y1={bottom} y2={bottom} />
+        <path className="usage-chart-area" d={areaPath} />
+        <path className="usage-chart-line" d={linePath} />
+        {points.map((point) => <circle className={point.bucket.key === selectedKey ? "selected" : ""} key={point.bucket.key} cx={point.x} cy={point.y} r={point.bucket.key === selectedKey ? 5 : 3.5} tabIndex={0} role="button" aria-label={point.bucket.label + " " + formatUsageDuration(point.bucket.milliseconds)} onClick={() => onSelect(point.bucket.key)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(point.bucket.key); } }}><title>{point.bucket.label + " · " + formatUsageDuration(point.bucket.milliseconds)}</title></circle>)}
+      </svg>
+    </div>
+    <div className="usage-axis-labels" style={{ "--usage-columns": Math.max(buckets.length, 1) } as CSSProperties}>{buckets.map((bucket, index) => <span key={bucket.key}>{index % labelStep === 0 || index === buckets.length - 1 ? bucket.label : ""}</span>)}</div>
+  </div>;
+}
+
+function UsageBucketDetails({ buckets, selectedKey, onSelect, compact = false }: { buckets: UsageBucket[]; selectedKey: string; onSelect: (key: string) => void; compact?: boolean }) {
+  const maxValue = Math.max(1, ...buckets.map((bucket) => bucket.milliseconds));
+  return <div className={"usage-detail-list" + (compact ? " compact" : "")}>{buckets.map((bucket) => <button type="button" className={"usage-detail-row" + (bucket.key === selectedKey ? " selected" : "")} key={bucket.key} onClick={() => onSelect(bucket.key)}><span>{bucket.label}</span><i><em style={{ width: bucket.milliseconds ? Math.max(4, bucket.milliseconds / maxValue * 100) + "%" : "0%" }} /></i><strong>{formatUsageDuration(bucket.milliseconds)}</strong></button>)}</div>;
+}
+
 function SoftwareUsage({ sessions, syncing, appCategories, manualLearningDrops, onCategoryChange, lastSyncedAt }: { sessions: Session[]; syncing: boolean; appCategories: AppCategories; manualLearningDrops: number; onCategoryChange: (appKey: string, category: AppCategory) => void; lastSyncedAt: number | null }) {
   const language = useLanguage();
   const [rangeKey, setRangeKey] = useState<UsageRangeKey>("recent7");
+  const [displayMode, setDisplayMode] = useState<UsageDisplayMode>("daily");
   const [customFrom, setCustomFrom] = useState(() => dateText(addLocalDay(localDayStart(Date.now()), -6)));
   const [customTo, setCustomTo] = useState(today());
   const [selectedAppKey, setSelectedAppKey] = useState("");
+  const [selectedBucketKey, setSelectedBucketKey] = useState("");
   const usage = useMemo(() => softwareUsage(sessions, rangeKey, customFrom, customTo, appCategories), [sessions, rangeKey, customFrom, customTo, appCategories]);
   const categoryDrops = useMemo(() => categoryWaterDrops(sessions, appCategories), [sessions, appCategories]);
   const selectedApp = usage.apps.find((app) => app.key === selectedAppKey) ?? usage.apps[0] ?? null;
-  const maxTrend = Math.max(1, ...usage.buckets.map((bucket) => bucket.milliseconds));
+  const activeBucketKey = usage.buckets.some((bucket) => bucket.key === selectedBucketKey) ? selectedBucketKey : usage.buckets.at(-1)?.key ?? "";
+  const selectedBucket = usage.buckets.find((bucket) => bucket.key === activeBucketKey) ?? null;
+  const appTrendBuckets = selectedApp ? usage.buckets.map((bucket, index) => ({ ...bucket, milliseconds: selectedApp.trend[index] ?? 0 })) : [];
   const maxHeat = Math.max(1, ...usage.heatmap.map((bucket) => bucket.milliseconds));
-  const syncLabel = syncing ? "正在同步" : lastSyncedAt ? `最近同步 ${new Date(lastSyncedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}` : "等待同步";
+  const syncLabel = syncing ? "正在同步" : lastSyncedAt ? "最近同步 " + new Date(lastSyncedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "等待同步";
   const rangeOptions: { key: UsageRangeKey; label: string }[] = [
-    { key: "today", label: "今天" }, { key: "recent7", label: "近 7 天" }, { key: "recent30", label: "近 30 天" }, { key: "recentYear", label: "近一年" },
-    { key: "week", label: "本周" }, { key: "month", label: "本月" }, { key: "year", label: "今年" }, { key: "all", label: "全部" },
+    { key: "today", label: "今天" }, { key: "recent7", label: "近 7 天" }, { key: "recent30", label: "近 30 天" }, { key: "recentYear", label: "近一年" }, { key: "all", label: "全部" },
   ];
   const firstHeatmapDay = usage.heatmap[0] ? new Date(usage.heatmap[0].from).getDay() : 1;
   const leadingCells = firstHeatmapDay === 0 ? 6 : firstHeatmapDay - 1;
   const heatmapCells: (UsageBucket | null)[] = [...new Array(leadingCells).fill(null), ...usage.heatmap];
-  const dateRangeLabel = usage.range.key === "all" && !sessions.length ? "还没有可用的会话" : `${new Date(usage.range.from).toLocaleDateString("zh-CN")} - ${new Date(usage.range.to - 1).toLocaleDateString("zh-CN")}`;
+  const dateRangeLabel = usage.range.key === "all" && !sessions.length ? "还没有可用的会话" : new Date(usage.range.from).toLocaleDateString("zh-CN") + " - " + new Date(usage.range.to - 1).toLocaleDateString("zh-CN");
   const trendStyle = { "--usage-columns": Math.max(usage.buckets.length, 1) } as CSSProperties;
   return <section className="software-usage" aria-label="软件使用时长">
-    <div className="usage-heading"><div><span className="section-label">软件使用</span><h2>软件使用时长</h2><p>读取 Patina 的有效前台活动，统计与目标成长互不混合。</p></div><span className={`sync-chip ${syncing ? "syncing" : ""}`}><i />{syncLabel}</span></div>
-    <div className="usage-range-control"><div className="usage-range-tabs" role="tablist" aria-label="统计范围">{rangeOptions.map((option) => <button className={rangeKey === option.key ? "active" : ""} key={option.key} onClick={() => setRangeKey(option.key)} role="tab" aria-selected={rangeKey === option.key}>{option.label}</button>)}<button className={rangeKey === "custom" ? "active" : ""} onClick={() => setRangeKey("custom")} role="tab" aria-selected={rangeKey === "custom"}>自定义</button></div>{rangeKey === "custom" ? <div className="usage-custom-range"><label>开始日期<input type="date" value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} /></label><span>至</span><label>结束日期<input type="date" value={customTo} onChange={(event) => setCustomTo(event.target.value)} /></label></div> : null}</div>
+    <div className="usage-heading"><div><span className="section-label">软件使用</span><h2>软件使用时长</h2><p>读取 Patina 的有效前台活动，统计与目标成长互不混合。</p></div><span className={"sync-chip" + (syncing ? " syncing" : "")}><i />{syncLabel}</span></div>
+    <div className="usage-range-control"><div className="usage-control-row"><div className="usage-range-tabs" role="tablist" aria-label="统计范围">{rangeOptions.map((option) => <button className={rangeKey === option.key ? "active" : ""} key={option.key} onClick={() => setRangeKey(option.key)} role="tab" aria-selected={rangeKey === option.key}>{option.label}</button>)}<button className={rangeKey === "custom" ? "active" : ""} onClick={() => setRangeKey("custom")} role="tab" aria-selected={rangeKey === "custom"}>自定义</button></div><div className="usage-display-tabs" role="tablist" aria-label="显示方式"><span>显示</span><button className={displayMode === "daily" ? "active" : ""} onClick={() => setDisplayMode("daily")} role="tab" aria-selected={displayMode === "daily"}>每日</button><button className={displayMode === "total" ? "active" : ""} onClick={() => setDisplayMode("total")} role="tab" aria-selected={displayMode === "total"}>总和</button></div></div>{rangeKey === "custom" ? <div className="usage-custom-range"><label>开始日期<input type="date" value={customFrom} onChange={(event) => setCustomFrom(event.target.value)} /></label><span>至</span><label>结束日期<input type="date" value={customTo} onChange={(event) => setCustomTo(event.target.value)} /></label></div> : null}</div>
     <div className="usage-range-caption"><strong>{usage.range.label}</strong><span>{dateRangeLabel}</span></div>
-    <div className="usage-metrics"><div><span>范围总时长</span><strong>{formatPatinaDuration(usage.totalMilliseconds)}</strong></div><div><span>{usage.range.mode === "month" ? "月均时长" : "日均时长"}</span><strong>{formatPatinaDuration(usage.averageMilliseconds)}</strong></div><div><span>活跃天数</span><strong>{usage.activeDays}<small> 天</small></strong></div></div><div className="usage-category-summary"><Droplets size={16} /><span>水滴来源</span><b className="positive">学习软件 {formatSignedPoints(categoryDrops.learningDrops)}</b><b className="positive">手动记录 +{formatPoints(manualLearningDrops)}</b><b className="negative">游戏软件 {categoryDrops.gameDrops ? `-${formatPoints(categoryDrops.gameDrops)}` : "0.0"}</b><small>每满 1 小时计算，不计入的软件不影响余额。</small></div>
-    <div className="usage-section-block"><div className="usage-section-title"><div><span className="section-label">趋势</span><h3>活动趋势</h3></div><span>{usage.range.mode === "month" ? "按月" : "按日"}</span></div>{usage.buckets.length ? <div className="usage-chart-scroll"><div className={`usage-chart ${usage.buckets.length > 31 ? "wide" : ""}`} style={trendStyle}>{usage.buckets.map((bucket) => <div className="usage-chart-column" key={bucket.key} title={`${bucket.label} · ${formatPatinaDuration(bucket.milliseconds)}`}><div className="usage-chart-track"><i style={{ height: bucket.milliseconds ? `${Math.max(5, bucket.milliseconds / maxTrend * 100)}%` : "0%" }} /></div><span>{bucket.label}</span></div>)}</div></div> : <UsageEmpty text="当前范围没有软件使用记录" />}</div>
-    <div className="usage-insight-grid"><div className="usage-section-block usage-app-ranking"><div className="usage-section-title"><div><span className="section-label">应用</span><h3>应用使用排行</h3></div><Monitor size={17} /></div>{usage.apps.length ? <div className="usage-app-list">{usage.apps.map((app, index) => <div className={`usage-app-row ${selectedApp?.key === app.key ? "selected" : ""}`} key={app.key}><button className="usage-app-main" onClick={() => setSelectedAppKey(app.key)}><b className="usage-app-rank">{index + 1}</b><span className="usage-app-name"><strong>{app.name}</strong><small>{app.activeDays} 天有记录</small><i><em style={{ width: `${Math.min(100, app.percentage)}%` }} /></i></span><span className="usage-app-value"><strong>{formatPatinaDuration(app.milliseconds)}</strong><small>{app.percentage}%</small>{app.waterDrops !== 0 ? <em className={app.waterDrops > 0 ? "positive" : "negative"}>{app.waterDrops > 0 ? "+" : ""}{formatPoints(app.waterDrops)} 水滴</em> : null}</span></button><select className="usage-app-category" aria-label={`${app.name} 分类`} value={app.category} onChange={(event) => onCategoryChange(app.key, event.target.value as AppCategory)}><option value="neutral">不计入</option><option value="learning">学习软件，加水滴</option><option value="game">游戏软件，扣水滴</option></select></div>)}</div> : <UsageEmpty text="当前范围没有应用记录" />}</div><div className="usage-section-block usage-app-trend"><div className="usage-section-title"><div><span className="section-label">应用趋势</span><h3>{selectedApp?.name ?? "选择一个应用"}</h3></div><TrendingUp size={17} /></div>{selectedApp ? <div className="usage-chart-scroll"><div className="usage-chart mini" style={trendStyle}>{selectedApp.trend.map((milliseconds, index) => <div className="usage-chart-column" key={usage.buckets[index]?.key ?? index} title={`${usage.buckets[index]?.label ?? ""} · ${formatPatinaDuration(milliseconds)}`}><div className="usage-chart-track"><i style={{ height: milliseconds ? `${Math.max(5, milliseconds / Math.max(1, ...selectedApp.trend) * 100)}%` : "0%" }} /></div><span>{usage.buckets[index]?.label ?? ""}</span></div>)}</div></div> : <UsageEmpty text="选择应用后查看它在当前范围的变化" />}</div></div>
-    <div className="usage-section-block usage-heatmap"><div className="usage-section-title"><div><span className="section-label">活动热力图</span><h3>每天的使用强度</h3></div><span>{usage.heatmap.length > 31 ? "最近 365 天" : usage.range.label}</span></div>{usage.heatmap.length ? <><div className="heatmap-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div className="heatmap-grid">{heatmapCells.map((bucket, index) => bucket ? <div className="heatmap-cell" data-level={bucket.milliseconds ? Math.min(4, Math.ceil(bucket.milliseconds / maxHeat * 4)) : 0} key={bucket.key} title={`${bucket.label} · ${formatPatinaDuration(bucket.milliseconds)}`} /> : <div className="heatmap-cell blank" key={`blank-${index}`} />)}</div><div className="heatmap-legend"><span>少</span><i data-level="0" /><i data-level="1" /><i data-level="2" /><i data-level="3" /><i data-level="4" /><span>多</span></div></> : <UsageEmpty text="当前范围没有活动" />}</div>
-    <div className="usage-section-block usage-sessions"><div className="usage-section-title"><div><span className="section-label">会话明细</span><h3>最近使用记录</h3></div><span>最近 {usage.recentSessions.length} 条</span></div>{usage.recentSessions.length ? <div className="records-table"><div className="records-row records-head"><span>应用</span><span>开始时间</span><span>结束时间</span><span>时长</span></div>{usage.recentSessions.map((session) => <div className="records-row" key={session.id}><strong title={session.exeName}>{session.appName || session.exeName}</strong><span>{sessionTime(session.startTime, language)}</span><span>{session.endTime ? sessionTime(session.endTime, language) : "进行中"}</span><span>{formatPatinaDuration(sessionDuration(session) * 60000)}</span></div>)}</div> : <UsageEmpty text="当前范围没有会话记录" />}</div>
+    <div className="usage-metrics"><div><span>范围总时长</span><strong>{formatUsageDuration(usage.totalMilliseconds)}</strong></div><div><span>{usage.range.mode === "month" ? "月均时长" : "日均时长"}</span><strong>{formatUsageDuration(usage.averageMilliseconds)}</strong></div><div><span>活跃天数</span><strong>{usage.activeDays}<small> 天</small></strong></div></div><div className="usage-category-summary"><Droplets size={16} /><span>水滴来源</span><b className="positive">学习软件 {formatSignedPoints(categoryDrops.learningDrops)}</b><b className="positive">手动记录 +{formatPoints(manualLearningDrops)}</b><b className="negative">游戏软件 {categoryDrops.gameDrops ? "-" + formatPoints(categoryDrops.gameDrops) : "0.0"}</b><small>每满 1 小时计算，不计入的软件不影响余额。</small></div>
+    {displayMode === "daily" ? <div className="usage-section-block usage-trend-block"><div className="usage-section-title"><div><span className="section-label">每日明细</span><h3>活动趋势</h3></div><span>{usage.range.mode === "month" ? "按月" : "按日"}</span></div>{usage.buckets.length ? <><UsageTrendChart buckets={usage.buckets} selectedKey={activeBucketKey} onSelect={setSelectedBucketKey} /><div className="usage-selected-bucket">{selectedBucket ? <><span>{selectedBucket.label}</span><strong>{formatUsageDuration(selectedBucket.milliseconds)}</strong><small>当前范围内的软件使用时长</small></> : <span>当前范围没有软件使用记录</span>}</div><UsageBucketDetails buckets={usage.buckets} selectedKey={activeBucketKey} onSelect={setSelectedBucketKey} /></> : <UsageEmpty text="当前范围没有软件使用记录" />}</div> : <div className="usage-section-block usage-total-view"><div className="usage-section-title"><div><span className="section-label">总和</span><h3>当前范围总和</h3></div><span>{dateRangeLabel}</span></div><div className="usage-total-highlight"><span>软件使用总时长</span><strong>{formatUsageDuration(usage.totalMilliseconds)}</strong><small>汇总全部已读取的有效前台活动，不按单条会话重复累计。</small></div><div className="usage-total-breakdown">{usage.apps.slice(0, 6).map((app) => <div key={app.key}><span>{app.name}</span><strong>{formatUsageDuration(app.milliseconds)}</strong><small>{app.activeDays} 天有记录 · {app.percentage}%</small></div>)}</div></div>}
+    <div className="usage-insight-grid"><div className="usage-section-block usage-app-ranking"><div className="usage-section-title"><div><span className="section-label">应用</span><h3>应用使用排行</h3></div><Monitor size={17} /></div>{usage.apps.length ? <div className="usage-app-list">{usage.apps.map((app, index) => <div className={"usage-app-row" + (selectedApp?.key === app.key ? " selected" : "")} key={app.key}><button className="usage-app-main" onClick={() => setSelectedAppKey(app.key)}><b className="usage-app-rank">{index + 1}</b><span className="usage-app-name"><strong>{app.name}</strong><small>{app.activeDays} 天有记录</small><i><em style={{ width: Math.min(100, app.percentage) + "%" }} /></i></span><span className="usage-app-value"><strong>{formatUsageDuration(app.milliseconds)}</strong><small>{app.percentage}%</small>{app.waterDrops !== 0 ? <em className={app.waterDrops > 0 ? "positive" : "negative"}>{app.waterDrops > 0 ? "+" : ""}{formatPoints(app.waterDrops)} 水滴</em> : null}</span></button><select className="usage-app-category" aria-label={app.name + " 分类"} value={app.category} onChange={(event) => onCategoryChange(app.key, event.target.value as AppCategory)}><option value="neutral">不计入</option><option value="learning">学习软件，加水滴</option><option value="game">游戏软件，扣水滴</option></select></div>)}</div> : <UsageEmpty text="当前范围没有应用记录" />}</div><div className="usage-section-block usage-app-trend"><div className="usage-section-title"><div><span className="section-label">应用趋势</span><h3>{selectedApp?.name ?? "选择一个应用"}</h3></div><TrendingUp size={17} /></div>{selectedApp ? <><div className="usage-app-trend-metrics"><div><span>当前范围总和</span><strong>{formatUsageDuration(selectedApp.milliseconds)}</strong></div><div><span>活跃天数</span><strong>{selectedApp.activeDays}<small> 天</small></strong></div></div><UsageTrendChart buckets={appTrendBuckets} compact selectedKey={activeBucketKey} onSelect={setSelectedBucketKey} /><UsageBucketDetails buckets={appTrendBuckets} compact selectedKey={activeBucketKey} onSelect={setSelectedBucketKey} /></> : <UsageEmpty text="选择应用后查看它在当前范围的变化" />}</div></div>
+    <div className="usage-section-block usage-heatmap"><div className="usage-section-title"><div><span className="section-label">活动热力图</span><h3>每天的使用强度</h3></div><span>{usage.heatmap.length > 31 ? "最近 365 天" : usage.range.label}</span></div>{usage.heatmap.length ? <><div className="heatmap-weekdays"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div><div className="heatmap-grid">{heatmapCells.map((bucket, index) => bucket ? <div className="heatmap-cell" data-level={bucket.milliseconds ? Math.min(4, Math.ceil(bucket.milliseconds / maxHeat * 4)) : 0} key={bucket.key} title={bucket.label + " · " + formatUsageDuration(bucket.milliseconds)} /> : <div className="heatmap-cell blank" key={"blank-" + index} />)}</div><div className="heatmap-legend"><span>少</span><i data-level="0" /><i data-level="1" /><i data-level="2" /><i data-level="3" /><i data-level="4" /><span>多</span></div></> : <UsageEmpty text="当前范围没有活动" />}</div>
+    <div className="usage-section-block usage-sessions"><div className="usage-section-title"><div><span className="section-label">会话明细</span><h3>最近使用记录</h3></div><span>最近 {usage.recentSessions.length} 条</span></div>{usage.recentSessions.length ? <div className="records-table"><div className="records-row records-head"><span>应用</span><span>开始时间</span><span>结束时间</span><span>时长</span></div>{usage.recentSessions.map((session) => <div className="records-row" key={session.id}><strong title={session.exeName}>{session.appName || session.exeName}</strong><span>{sessionTime(session.startTime, language)}</span><span>{session.endTime ? sessionTime(session.endTime, language) : "进行中"}</span><span>{formatUsageDuration(sessionDuration(session) * 60000)}</span></div>)}</div> : <UsageEmpty text="当前范围没有会话记录" />}</div>
   </section>;
 }
-
 function UsageEmpty({ text: message }: { text: string }) { return <div className="usage-empty"><BarChart3 size={19} /><span>{message}</span></div>; }
 
 function GoalCard({ goal, stat, selected, onClick }: { goal: Goal; stat: ReturnType<typeof goalStats>; selected: boolean; onClick: () => void }) { const language = useLanguage(); const percent = goal.weekly ? Math.min(100, stat.week / goal.weekly * 100) : 0; return <button className={`plant-card ${selected ? "selected" : ""}`} onClick={onClick}><div className="card-plant"><Plant kind={plantKindFor(goal)} units={stat.units} progress={plantProgress(stat.total)} /></div><div className="card-info"><div className="card-title"><strong>{goal.title}</strong><span>{stage(stat.units, false, language)}</span></div><p>{goal.app || text(language, "手动记录", "Manual log")}</p><div className="progress"><i style={{ width: `${percent}%` }} /></div><div className="card-meta"><span>{text(language, "本周", "This week")} {minutes(stat.week, language)}</span><span>{stat.units} {text(language, "成长单位", "units")}</span></div></div></button>; }

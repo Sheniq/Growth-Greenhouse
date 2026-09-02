@@ -48,8 +48,9 @@ One goal becomes one plant. Multiple completed goals become a garden, and the ga
 - Read Patina's `sessions` table through a read-only SQLite connection.
 - Patina must be installed first; if it is not detected, the app does not independently read or infer software usage time and provides a Patina GitHub Releases link.
 - Refresh the Patina source every 5 seconds and show an explicit connection state.
-- Show Patina-style software usage statistics on the Data Source page: today, recent 7 days, recent 30 days, recent year, this week, this month, this year, all time, and custom ranges.
+- Show Patina-style software usage statistics on the Data Source page: today, recent 7 days, recent 30 days, recent year, all time, and custom ranges, with a daily-detail or range-total view.
 - Show total time, average time, active days, daily/monthly trends, an activity heatmap, application ranking, application trends, and recent sessions.
+- Display software time as whole hours and minutes rather than decimal hours; only the water-drop balance uses one decimal place.
 - Classify applications as learning software, game software, or excluded software. The classification is stored locally and never changes Patina.
 - Avoid double-counting overlapping activity intervals for a goal.
 - Add manual learning records for study that happens away from the computer.
