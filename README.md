@@ -8,6 +8,8 @@ Turn the time you choose to spend learning into a growing place of your own.
 
 [简体中文](README.zh-CN.md)
 
+[Changelog](CHANGELOG.md)
+
 ![Platform](https://img.shields.io/badge/platform-Windows-4f6f8f)
 ![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%20v2-4f7f8f)
 ![Frontend](https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-3178c6)
