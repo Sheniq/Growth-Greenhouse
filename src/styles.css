@@ -419,6 +419,21 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .usage-empty { display: flex; align-items: center; gap: 7px; min-height: 88px; color: #91a593; font-size: 10px; }
 .usage-empty svg { color: #83a887; }
 
+.danger-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; padding: 0 12px; color: #a45049; background: #fff8f5; border: 1px solid #eccbc4; border-radius: 8px; font-size: 12px; font-weight: 600; }
+.danger-button:hover { color: #8d3935; background: #fff0ec; border-color: #dcaba2; }
+.delete-warning { display: flex; align-items: flex-start; gap: 10px; margin-top: 18px; padding: 12px 13px; color: #985c54; background: #fff5f1; border: 1px solid #f0d2c9; border-radius: 9px; }
+.delete-warning > svg { flex: 0 0 auto; margin-top: 1px; }
+.delete-warning strong, .delete-warning span { display: block; }
+.delete-warning strong { color: #93453f; font-size: 11px; }
+.delete-warning span { margin-top: 4px; color: #a7756e; font-size: 10px; line-height: 1.45; }
+.delete-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 23px; }
+.garden-detail .danger-button { margin-top: 20px; }
+
+@media (max-width: 760px) {
+  .detail-buttons { flex-wrap: wrap; }
+  .detail-buttons .danger-button { flex: 1 0 auto; }
+}
+
 @media (max-width: 900px) {
   .usage-insight-grid { grid-template-columns: 1fr; gap: 0; }
   .usage-insight-grid .usage-section-block { border-top: 1px solid #edf3e8; }
