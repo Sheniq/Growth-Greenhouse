@@ -47,6 +47,7 @@ Patina 提供有效前台活动时长
 - 合并重叠时间区间，避免同一目标重复计算。
 - 为电脑之外的学习内容添加手动学习记录。
 - 植物从种子、发芽、幼苗、成熟到开花阶段成长。
+- 植物和温室使用清爽绘本式视觉，光标移到植物上时会平滑放大。
 - 完成目标后移入持久保存的成长温室。
 - 创建普通奖励或年度奖励，并使用水滴兑换。
 - 将目标、手动记录和奖励保存在应用自己的本地 WebView 存储中。
@@ -107,7 +108,7 @@ pnpm build
 pnpm tauri:build
 ```
 
-Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.1_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
+Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.2_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
 
 ## 项目结构
 

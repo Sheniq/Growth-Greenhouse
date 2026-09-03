@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "成长温室",
   "mainBinaryName": "成长温室",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.growthgreenhouse.app",
   "build": {
     "beforeDevCommand": "pnpm dev",

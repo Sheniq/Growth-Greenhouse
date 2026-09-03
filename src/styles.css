@@ -242,26 +242,33 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .menu-popover button:hover { color: #176d59; background: #eaf7df; }
 
 /* Each plant keeps the same footprint while its silhouette changes by species. */
-.plant { width: 92px; height: 104px; --plant-scale: 1; scale: var(--plant-scale); transform-origin: 50% 100%; transition: scale .7s cubic-bezier(.2,.75,.3,1), opacity .35s ease; }
-.plant-halo { left: 10px; top: 9px; width: 70px; height: 58px; background: #d9efcf; }
-.plant-pot { left: 29px; bottom: 5px; width: 36px; height: 27px; background: #c88962; }
-.plant-pot::before { left: -3px; width: 42px; background: #a96850; }
-.plant-stem { left: 44px; bottom: 29px; width: 4px; height: 45px; background: #4f9a61; }
-.plant-leaf { width: 27px; height: 15px; background: #6fbd70; }
+.plant { position: relative; width: 92px; height: 104px; --plant-scale: 1; --plant-hover-scale: 1; scale: calc(var(--plant-scale) * var(--plant-hover-scale)); transform-origin: 50% 100%; transition: scale .28s cubic-bezier(.2,.75,.3,1), opacity .35s ease, filter .28s ease; }
+.plant:hover { --plant-hover-scale: 1.09; filter: drop-shadow(0 5px 5px rgba(45,88,70,.16)); }
+.plant::before { content: ""; position: absolute; z-index: 0; left: 15px; bottom: 1px; width: 62px; height: 9px; background: rgba(51,84,72,.14); border-radius: 50%; filter: blur(4px); pointer-events: none; }
+.plant-halo { z-index: 0; left: 10px; top: 9px; width: 70px; height: 58px; background: radial-gradient(ellipse at 50% 56%, rgba(218,241,222,.9) 0 42%, rgba(218,241,222,0) 74%); opacity: .92; }
+.plant-pot { z-index: 3; left: 29px; bottom: 5px; width: 36px; height: 27px; background: linear-gradient(105deg, #c88962 0%, #dca078 48%, #b8725b 100%); border-radius: 7px 7px 10px 10px; box-shadow: inset 3px 0 0 rgba(255,255,255,.16), 0 3px 0 rgba(116,76,61,.12); overflow: visible; }
+.plant-pot::before { z-index: 2; left: -3px; width: 42px; background: linear-gradient(180deg, #a96850 0%, #bd7a5c 55%, #8f5d4d 100%); box-shadow: 0 1px 0 rgba(255,255,255,.24); }
+.plant-pot::after { content: ""; position: absolute; z-index: 1; left: 4px; top: 0; width: 28px; height: 6px; background: #725247; border-radius: 50%; opacity: .82; }
+.plant-pot span { z-index: 3; top: 3px; left: 7px; width: 4px; height: 18px; background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0)); border-radius: 5px; }
+.plant-stem { z-index: 2; left: 44px; bottom: 29px; width: 4px; height: 45px; background: linear-gradient(90deg, #397c5f, #5ba66a 58%, #2f6f58); border-radius: 4px; box-shadow: 1px 0 0 rgba(255,255,255,.18); }
+.plant-leaf { z-index: 2; width: 27px; height: 15px; background: linear-gradient(135deg, #438f68 0%, #74be78 60%, #2f765c 100%); border: 1px solid rgba(42,103,79,.18); border-radius: 100% 0 100% 0; box-shadow: 1px 2px 0 rgba(39,96,71,.12); }
+.plant-leaf::after { content: ""; position: absolute; left: 50%; top: 2px; width: 1px; height: calc(100% - 4px); background: rgba(242,255,229,.5); border-radius: 2px; transform: rotate(27deg); transform-origin: center; }
 .plant-leaf-left { left: 20px; bottom: 53px; }
 .plant-leaf-right { left: 47px; bottom: 65px; }
 .plant-kind-sprout .plant-flower, .plant-kind-fern .plant-flower, .plant-kind-cactus .plant-flower { display: none; }
 .plant-kind-sprout .plant-leaf-left { transform: rotate(-35deg); }
 .plant-kind-sprout .plant-leaf-right { transform: scaleX(-1) rotate(-35deg); }
-.plant-kind-flower .plant-stem { height: 49px; background: #47945a; }
-.plant-kind-flower .plant-leaf-left { bottom: 49px; background: #65ad68; }
-.plant-kind-flower .plant-leaf-right { bottom: 60px; background: #79c373; }
-.plant-kind-flower .plant-flower { color: #dc7161; transition: opacity .42s ease, transform .62s cubic-bezier(.2,.75,.3,1); }
+.plant-kind-flower .plant-stem { height: 49px; background: linear-gradient(90deg, #397e58, #63aa67 58%, #2f6f50); }
+.plant-kind-flower .plant-leaf-left { bottom: 49px; background: linear-gradient(135deg, #438c60, #76bb73 63%, #2f7155); }
+.plant-kind-flower .plant-leaf-right { bottom: 60px; background: linear-gradient(135deg, #4a9e67, #84c77c 63%, #357c5b); }
+.plant-kind-flower .plant-flower { z-index: 4; color: #d77372; filter: drop-shadow(0 3px 3px rgba(180,87,86,.2)); transition: opacity .42s ease, transform .62s cubic-bezier(.2,.75,.3,1); }
 .plant-kind-flower.plant-0 .plant-flower, .plant-kind-flower.plant-1 .plant-flower, .plant-kind-flower.plant-2 .plant-flower { opacity: 0; transform: scale(.45); }
-.plant-kind-flower .plant-flower::after { content: ""; position: absolute; left: 7px; top: 7px; width: 7px; height: 7px; background: #f3c74f; border-radius: 50%; }
-.plant-kind-fern .fern-fronds { position: absolute; left: 26px; bottom: 27px; width: 42px; height: 58px; }
-.fern-fronds::before { content: ""; position: absolute; left: 19px; bottom: 0; width: 3px; height: 58px; background: #4e9d63; border-radius: 5px; transform: rotate(3deg); }
-.fern-fronds i { position: absolute; display: block; width: 25px; height: 12px; background: #62b875; border-radius: 100% 0 100% 0; transform-origin: right bottom; }
+.plant-kind-flower .plant-flower svg { stroke-width: 1.7; }
+.plant-kind-flower .plant-flower::after { content: ""; position: absolute; left: 7px; top: 7px; width: 7px; height: 7px; background: #f3c74f; border: 1px solid rgba(168,111,38,.22); border-radius: 50%; }
+.plant-kind-fern .fern-fronds { z-index: 2; position: absolute; left: 26px; bottom: 27px; width: 42px; height: 58px; }
+.fern-fronds::before { content: ""; position: absolute; left: 19px; bottom: 0; width: 3px; height: 58px; background: linear-gradient(90deg, #347c5e, #66ac6b); border-radius: 5px; transform: rotate(3deg); }
+.fern-fronds i { position: absolute; display: block; width: 25px; height: 12px; background: linear-gradient(135deg, #3d8d65, #78c17a 62%, #34795b); border: 1px solid rgba(43,105,78,.16); border-radius: 100% 0 100% 0; box-shadow: 1px 2px 0 rgba(39,96,71,.1); transform-origin: right bottom; }
+.fern-fronds i::after { content: ""; position: absolute; right: 3px; bottom: 2px; width: 1px; height: 9px; background: rgba(241,255,229,.45); transform: rotate(-37deg); }
 .fern-fronds i:nth-child(1) { left: 1px; bottom: 12px; transform: rotate(-23deg); }
 .fern-fronds i:nth-child(2) { left: 17px; bottom: 25px; transform: scaleX(-1) rotate(-23deg); }
 .fern-fronds i:nth-child(3) { left: 0; bottom: 34px; transform: rotate(-38deg) scale(.86); }
@@ -269,15 +276,15 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .plant-kind-fern.plant-0 .fern-fronds { opacity: 0; transform: scale(.4); }
 .plant-kind-fern.plant-1 .fern-fronds { transform: scale(.55); transform-origin: bottom center; }
 .plant-kind-fern.plant-2 .fern-fronds { transform: scale(.72); transform-origin: bottom center; }
-.plant-kind-cactus .cactus-body { position: absolute; left: 34px; bottom: 28px; width: 26px; height: 48px; background: #61ae70; border-radius: 14px 14px 8px 8px; }
-.plant-kind-cactus .cactus-body::before { content: ""; position: absolute; left: 7px; top: 9px; width: 2px; height: 31px; background: rgba(255,255,255,.35); border-radius: 2px; }
-.plant-kind-cactus .cactus-body i, .plant-kind-cactus .cactus-body b { position: absolute; display: block; width: 13px; height: 24px; background: #6cba78; border-radius: 9px 9px 3px 3px; }
+.plant-kind-cactus .cactus-body { z-index: 2; position: absolute; left: 34px; bottom: 28px; width: 26px; height: 48px; background: linear-gradient(105deg, #4d9867 0%, #79c37b 54%, #377c5b 100%); border: 1px solid rgba(43,105,78,.2); border-radius: 14px 14px 8px 8px; box-shadow: inset 4px 0 0 rgba(255,255,255,.16), 2px 3px 0 rgba(39,96,71,.1); }
+.plant-kind-cactus .cactus-body::before { content: ""; position: absolute; left: 7px; top: 9px; width: 2px; height: 31px; background: repeating-linear-gradient(180deg, rgba(241,255,229,.54) 0 2px, transparent 2px 6px); border-radius: 2px; }
+.plant-kind-cactus .cactus-body i, .plant-kind-cactus .cactus-body b { position: absolute; display: block; width: 13px; height: 24px; background: linear-gradient(105deg, #4b9565, #76be78 65%, #377b5a); border: 1px solid rgba(43,105,78,.16); border-radius: 9px 9px 3px 3px; }
 .plant-kind-cactus .cactus-body i { left: -9px; bottom: 8px; }
 .plant-kind-cactus .cactus-body b { right: -9px; top: 13px; }
 .plant-kind-cactus.plant-0 .cactus-body { opacity: 0; transform: scale(.4); }
 .plant-kind-cactus.plant-1 .cactus-body { transform: scale(.55); transform-origin: bottom center; }
 .plant-kind-cactus.plant-2 .cactus-body { transform: scale(.76); transform-origin: bottom center; }
-.plant-kind-cactus.plant-4 .cactus-body::after, .plant-kind-cactus.plant-5 .cactus-body::after { content: ""; position: absolute; left: 9px; top: -6px; width: 8px; height: 8px; background: #f3c74f; border-radius: 50%; box-shadow: 0 0 0 4px #fff0c7; }
+.plant-kind-cactus.plant-4 .cactus-body::after, .plant-kind-cactus.plant-5 .cactus-body::after { content: ""; position: absolute; left: 9px; top: -6px; width: 8px; height: 8px; background: #f3c74f; border: 1px solid rgba(168,111,38,.22); border-radius: 50%; box-shadow: 0 0 0 4px #fff0c7; }
 
 /* Completed goals open into a glass greenhouse scene rather than a second list. */
 .garden-trigger { position: relative; display: block; width: 100%; color: inherit; text-align: left; cursor: pointer; }
@@ -287,25 +294,24 @@ html, body, .app-shell { background: var(--app-bg); color: var(--app-text); }
 .garden-page-intro { min-height: 175px; }
 .back-button { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; margin-bottom: 17px; padding: 0 8px 0 4px; color: #4c8a61; background: transparent; border: 0; border-radius: 6px; font-size: 10px; font-weight: 600; }
 .back-button:hover { background: rgba(255,255,255,.56); color: #176d59; }
-.garden-scene { position: relative; min-height: 520px; overflow: hidden; padding: 160px 32px 30px; background: radial-gradient(ellipse at 50% -16%, rgba(255,255,255,.96) 0 22%, rgba(255,255,255,0) 61%), linear-gradient(180deg, #edf7f7 0%, #e5f1f1 51%, #f1e8d8 51.2%, #e4d4bd 100%); border: 1px solid #c9deda; border-radius: 14px; box-shadow: inset 0 -96px 0 rgba(178,146,99,.08), inset 0 0 0 1px rgba(255,255,255,.78), 0 14px 26px rgba(71,109,105,.1); isolation: isolate; }
-.garden-scene::before { content: ""; position: absolute; z-index: 0; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.46), rgba(255,255,255,0) 48%, rgba(255,255,255,.08) 51%, rgba(197,174,139,.08) 51.4%, rgba(255,255,255,0) 52%), linear-gradient(90deg, rgba(99,146,147,.13), transparent 10%, transparent 89%, rgba(99,146,147,.13)), repeating-linear-gradient(90deg, transparent 0 24.6%, rgba(103,151,151,.13) 24.8% 25.1%, transparent 25.3% 49.6%), linear-gradient(108deg, transparent 0 17%, rgba(255,255,255,.24) 17.2% 17.6%, transparent 17.8% 82%, rgba(255,255,255,.2) 82.2% 82.6%, transparent 82.8%); pointer-events: none; }
-.garden-scene::after { content: ""; position: absolute; z-index: 0; left: 0; right: 0; bottom: 0; height: 48%; background: linear-gradient(102deg, transparent 0 13%, rgba(160,128,91,.14) 13.2% 13.5%, transparent 13.7% 49.7%, rgba(160,128,91,.16) 49.9% 50.2%, transparent 50.4% 86.3%, rgba(160,128,91,.14) 86.5% 86.8%, transparent 87%), repeating-linear-gradient(90deg, transparent 0 19.5%, rgba(255,255,255,.16) 19.7% 20%, transparent 20.2% 39.5%), linear-gradient(180deg, rgba(255,255,255,.18), rgba(172,137,95,.1)); transform: perspective(480px) rotateX(42deg); transform-origin: bottom center; opacity: .8; pointer-events: none; }
-.scene-roof { position: absolute; z-index: 1; left: 50%; top: -78px; width: 94%; height: 255px; border: 1px solid rgba(80,128,131,.36); border-top: 0; border-radius: 2px 2px 18px 18px; background: linear-gradient(180deg, rgba(255,255,255,.36), rgba(196,226,226,.08) 68%, rgba(255,255,255,.22)); transform: translateX(-50%) perspective(510px) rotateX(-28deg); box-shadow: inset 0 0 0 1px rgba(255,255,255,.46), 0 8px 18px rgba(102,139,139,.06); pointer-events: none; }
-.scene-roof::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(78,128,132,.3); transform: translateX(-50%); box-shadow: -16vw 0 0 rgba(78,128,132,.16), 16vw 0 0 rgba(78,128,132,.16); }
-.scene-roof::after { content: ""; position: absolute; left: 3%; right: 3%; top: 47%; height: 1px; background: rgba(78,128,132,.24); box-shadow: 0 57px 0 rgba(78,128,132,.14); transform: perspective(320px) rotateX(31deg); }
-.scene-sun { position: absolute; z-index: 1; top: 17%; right: 23%; width: 13px; height: 13px; background: #efc66f; border-radius: 50%; box-shadow: 0 0 0 7px rgba(239,198,111,.13), 0 0 22px 8px rgba(239,198,111,.24); opacity: .68; }
+.garden-scene { position: relative; min-height: 520px; overflow: hidden; padding: 160px 32px 30px; background: radial-gradient(circle at 76% 18%, rgba(255,224,153,.22) 0 4%, rgba(255,224,153,0) 15%), linear-gradient(180deg, #eef8f7 0%, #e4f0ed 51%, #f7eddf 51.2%, #e7d3ba 100%); border: 1px solid #c6deda; border-radius: 14px; box-shadow: inset 0 -96px 0 rgba(184,143,96,.08), inset 0 0 0 1px rgba(255,255,255,.86), 0 14px 26px rgba(71,109,105,.08); isolation: isolate; }
+.garden-scene::before { content: ""; position: absolute; z-index: 0; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 47%, rgba(255,255,255,.1) 51%, rgba(197,174,139,.08) 51.4%, rgba(255,255,255,0) 52%), linear-gradient(90deg, rgba(76,132,133,.12), transparent 10%, transparent 89%, rgba(76,132,133,.12)), repeating-linear-gradient(90deg, transparent 0 24.6%, rgba(91,143,143,.12) 24.8% 25.1%, transparent 25.3% 49.6%), linear-gradient(108deg, transparent 0 17%, rgba(255,255,255,.28) 17.2% 17.6%, transparent 17.8% 82%, rgba(255,255,255,.22) 82.2% 82.6%, transparent 82.8%); pointer-events: none; }
+.garden-scene::after { content: ""; position: absolute; z-index: 0; left: 0; right: 0; bottom: 0; height: 48%; background: linear-gradient(102deg, transparent 0 13%, rgba(151,113,77,.14) 13.2% 13.5%, transparent 13.7% 49.7%, rgba(151,113,77,.16) 49.9% 50.2%, transparent 50.4% 86.3%, rgba(151,113,77,.14) 86.5% 86.8%, transparent 87%), repeating-linear-gradient(90deg, transparent 0 19.5%, rgba(255,255,255,.2) 19.7% 20%, transparent 20.2% 39.5%), linear-gradient(180deg, rgba(255,255,255,.2), rgba(172,137,95,.12)); transform: perspective(480px) rotateX(42deg); transform-origin: bottom center; opacity: .78; pointer-events: none; }
+.scene-roof { position: absolute; z-index: 1; left: 50%; top: -78px; width: 94%; height: 255px; border: 1px solid rgba(55,105,105,.34); border-top: 0; border-radius: 2px 2px 18px 18px; background: linear-gradient(180deg, rgba(255,255,255,.48), rgba(205,231,229,.1) 68%, rgba(255,255,255,.28)); transform: translateX(-50%) perspective(510px) rotateX(-28deg); box-shadow: inset 0 0 0 1px rgba(255,255,255,.58), 0 8px 18px rgba(82,132,132,.06); pointer-events: none; }
+.scene-roof::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: rgba(57,111,111,.28); transform: translateX(-50%); box-shadow: -16vw 0 0 rgba(57,111,111,.14), 16vw 0 0 rgba(57,111,111,.14); }
+.scene-roof::after { content: ""; position: absolute; left: 3%; right: 3%; top: 47%; height: 1px; background: rgba(57,111,111,.22); box-shadow: 0 57px 0 rgba(57,111,111,.13); transform: perspective(320px) rotateX(31deg); }
+.scene-sun { position: absolute; z-index: 1; top: 17%; right: 23%; width: 13px; height: 13px; background: #efc875; border-radius: 50%; box-shadow: 0 0 0 7px rgba(239,200,117,.13), 0 0 22px 8px rgba(239,200,117,.2); opacity: .72; }
 .scene-spark { position: absolute; z-index: 1; width: 5px; height: 5px; background: rgba(255,255,255,.92); border-radius: 50%; box-shadow: 0 0 0 4px rgba(255,255,255,.3); }
 .spark-one { top: 28%; left: 24%; }.spark-two { top: 22%; left: 67%; transform: scale(.65); }
-.garden-bench { position: absolute; z-index: 1; left: 4%; right: 4%; bottom: 58px; height: 9px; background: rgba(153,112,74,.58); border-radius: 3px; box-shadow: 0 18px 0 rgba(108,88,67,.38), 13px 10px 0 -3px rgba(108,88,67,.34), calc(100% - 13px) 10px 0 -3px rgba(108,88,67,.34), 0 1px 0 rgba(255,255,255,.22); opacity: .82; transform: perspective(260px) rotateX(18deg); pointer-events: none; }
+.garden-bench { position: absolute; z-index: 1; left: 4%; right: 4%; bottom: 58px; height: 9px; background: linear-gradient(180deg, rgba(164,119,76,.72), rgba(126,89,63,.62)); border-radius: 3px; box-shadow: 0 18px 0 rgba(108,88,67,.32), 13px 10px 0 -3px rgba(108,88,67,.3), calc(100% - 13px) 10px 0 -3px rgba(108,88,67,.3), 0 1px 0 rgba(255,255,255,.28); opacity: .84; transform: perspective(260px) rotateX(18deg); pointer-events: none; }
 .completed-plant-grid { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 158px; align-items: end; align-content: end; gap: 2px 8px; min-height: 325px; padding: 18px 4% 0; perspective: 900px; }
-.garden-plant { position: relative; display: flex; min-width: 0; min-height: 148px; flex-direction: column; align-items: center; justify-content: flex-end; padding: 4px 4px 0; color: #3f634d; background: transparent; border: 1px solid transparent; border-radius: 8px; text-shadow: 0 1px 2px rgba(255,255,255,.56); transition: transform .18s, background .18s, border-color .18s; }
-.garden-plant:nth-child(-n+4) { min-height: 120px; align-self: start; transform: scale(.72); opacity: .82; }
-.garden-plant:nth-child(n+5) { transform: scale(1.04); }
-.completed-plant-grid:not(.has-back-row) .garden-plant { min-height: 180px; align-self: end; transform: scale(1.04); opacity: 1; }
+.garden-plant { position: relative; display: flex; min-width: 0; min-height: 148px; --garden-scale: 1; flex-direction: column; align-items: center; justify-content: flex-end; padding: 4px 4px 0; color: #3f634d; background: transparent; border: 1px solid transparent; border-radius: 8px; text-shadow: 0 1px 2px rgba(255,255,255,.56); transform: translateY(0) scale(var(--garden-scale)); transition: background .18s, border-color .18s, box-shadow .18s; }
+.garden-plant:nth-child(-n+4) { min-height: 120px; align-self: start; --garden-scale: .72; opacity: .82; }
+.garden-plant:nth-child(n+5) { --garden-scale: 1.04; }
+.completed-plant-grid:not(.has-back-row) .garden-plant { min-height: 180px; align-self: end; --garden-scale: 1.04; opacity: 1; }
 .garden-plant:nth-child(4n+1) { transform-origin: bottom left; }
 .garden-plant:nth-child(4n+4) { transform-origin: bottom right; }
-.garden-plant:hover, .garden-plant.selected { background: rgba(255,255,255,.38); border-color: rgba(120,164,137,.55); box-shadow: 0 7px 18px rgba(69,107,75,.16); transform: translateY(-5px) scale(1.06); }
-.garden-plant:nth-child(-n+4):hover, .garden-plant:nth-child(-n+4).selected { transform: translateY(-4px) scale(.78); }
+.garden-plant:hover, .garden-plant.selected { background: rgba(255,255,255,.38); border-color: rgba(104,154,139,.52); box-shadow: 0 7px 18px rgba(69,107,75,.13); }
 .garden-plant strong { max-width: 100%; margin-top: 2px; overflow: hidden; color: #3f634d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .garden-plant span { margin-top: 3px; color: #668471; font-size: 9px; }
 .garden-scene-empty { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 260px; color: #4e705a; text-shadow: 0 1px 2px rgba(255,255,255,.6); }

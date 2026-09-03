@@ -57,6 +57,7 @@ One goal becomes one plant. Multiple completed goals become a garden, and the ga
 - Avoid double-counting overlapping activity intervals for a goal.
 - Add manual learning records for study that happens away from the computer.
 - Grow plants from seed to sprout, seedling, mature plant, and flowering stages.
+- Use a clean illustrated plant and greenhouse treatment, with a smooth grow-on-hover response.
 - Move completed goals into a persistent growth greenhouse.
 - Create ordinary or annual rewards and redeem them with earned water drops.
 - Keep goals, manual records, and rewards in the app's own local WebView storage.
@@ -108,7 +109,7 @@ pnpm build
 pnpm tauri:build
 ```
 
-The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.1_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
+The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.2_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
 
 ## Project Structure
 
