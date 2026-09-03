@@ -60,7 +60,7 @@ One goal becomes one plant. Multiple completed goals become a garden, and the ga
 - Move completed goals into a persistent growth greenhouse.
 - Create ordinary or annual rewards and redeem them with earned water drops.
 - Keep goals, manual records, and rewards in the app's own local WebView storage.
-- Provide a compact, non-focus-stealing desktop widget for the current goal.
+- Keep the desktop widget code ready for the 1.0 release; 0.1.x starts with the main window only.
 
 ## Privacy And Data
 
@@ -108,7 +108,7 @@ pnpm build
 pnpm tauri:build
 ```
 
-The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.0_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
+The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.1_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
 
 ## Project Structure
 

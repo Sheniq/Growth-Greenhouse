@@ -50,7 +50,7 @@ Patina 提供有效前台活动时长
 - 完成目标后移入持久保存的成长温室。
 - 创建普通奖励或年度奖励，并使用水滴兑换。
 - 将目标、手动记录和奖励保存在应用自己的本地 WebView 存储中。
-- 提供一个紧凑、不会主动抢焦点的桌面小组件显示当前目标。
+- 桌面小组件代码已保留，当前 0.1.x 版本不会默认启动；计划在 1.0 正式版启用。
 
 ## 页面与交互
 
@@ -59,7 +59,7 @@ Patina 提供有效前台活动时长
 - **奖励**：管理个人奖励和当前水滴余额。
 - **数据源设置**：查看 Patina 状态并设置可选的自定义数据库路径。
 
-小组件是一个可隐藏的透明小窗口，显示当前目标和每周目标，可按需打开主窗口，默认不会强制显示在普通窗口之上。
+桌面小组件将在 1.0 正式版启用。当前版本启动时只打开主窗口，避免额外的小窗口干扰使用。
 
 ## 数据与隐私
 
@@ -107,7 +107,7 @@ pnpm build
 pnpm tauri:build
 ```
 
-Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.0_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
+Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.1_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
 
 ## 项目结构
 

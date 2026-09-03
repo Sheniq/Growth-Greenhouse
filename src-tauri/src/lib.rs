@@ -89,7 +89,15 @@ fn read_patina_sessions(
 
 pub fn run() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![get_patina_source, read_patina_sessions, show_main_window])
+        .invoke_handler(tauri::generate_handler![
+            get_patina_source,
+            read_patina_sessions,
+            show_main_window,
+            minimize_main_window,
+            toggle_main_window,
+            is_main_window_maximized,
+            close_main_window,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Growth Greenhouse");
 }
@@ -99,4 +107,34 @@ fn show_main_window(app: tauri::AppHandle) -> Result<(), String> {
     let main = app.get_webview_window("main").ok_or_else(|| "主窗口不存在".to_string())?;
     main.show().map_err(|error| error.to_string())?;
     main.set_focus().map_err(|error| error.to_string())
+}
+
+fn main_window(app: &tauri::AppHandle) -> Result<tauri::WebviewWindow, String> {
+    app.get_webview_window("main").ok_or_else(|| "主窗口不存在".to_string())
+}
+
+#[tauri::command]
+fn minimize_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    main_window(&app)?.minimize().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn toggle_main_window(app: tauri::AppHandle) -> Result<bool, String> {
+    let main = main_window(&app)?;
+    if main.is_maximized().map_err(|error| error.to_string())? {
+        main.unmaximize().map_err(|error| error.to_string())?;
+    } else {
+        main.maximize().map_err(|error| error.to_string())?;
+    }
+    main.is_maximized().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn is_main_window_maximized(app: tauri::AppHandle) -> Result<bool, String> {
+    main_window(&app)?.is_maximized().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn close_main_window(app: tauri::AppHandle) -> Result<(), String> {
+    main_window(&app)?.close().map_err(|error| error.to_string())
 }

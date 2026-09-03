@@ -1,5 +1,7 @@
 :root { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; color: #26362d; background: #f6f3ec; font-synthesis: none; }
 * { box-sizing: border-box; }
+html { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; display: none; }
 body { margin: 0; min-width: 920px; background: #f6f3ec; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
@@ -10,7 +12,8 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .window-brand-mark { display: grid; place-items: center; width: 24px; height: 24px; color: #397c51; background: #dcefd8; border-radius: 7px; }
 .window-drag-region { height: 100%; -webkit-app-region: drag; }
 .window-controls { display: flex; align-items: stretch; height: 100%; -webkit-app-region: no-drag; }
-.window-controls button { display: grid; place-items: center; width: 46px; height: 100%; color: #75917c; background: transparent; border: 0; }
+.window-controls, .window-controls button { -webkit-app-region: no-drag; }
+.window-controls button { display: grid; place-items: center; width: 46px; height: 100%; color: #75917c; background: transparent; border: 0; pointer-events: auto; }
 .window-controls button:hover { color: #3f6b49; background: rgba(255,255,255,.62); }
 .window-controls .window-close:hover { color: #fff; background: #d86d62; }
 .sidebar { width: 232px; flex: 0 0 232px; min-height: calc(100vh - 42px); padding: 31px 19px 24px; background: #e8eee5; border-right: 1px solid #d8e0d4; display: flex; flex-direction: column; }

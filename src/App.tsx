@@ -4,7 +4,6 @@ import {
   BarChart3, Check, ChevronLeft, ChevronRight, CircleHelp, Clock3, Droplets, Flower2,
   FolderOpen, Gift, Leaf, Maximize2, Menu, Minimize2, Minus, Monitor, Plus, RefreshCw, Settings2, Sprout, Target, Trash2, TrendingUp, Trees, X,
 } from "lucide-react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import Widget from "./Widget";
 
 type View = "greenhouse" | "garden" | "rewards" | "settings";
@@ -515,20 +514,19 @@ function WindowBar() {
   useEffect(() => {
     if (!isNative) return;
     let mounted = true;
-    void getCurrentWindow().isMaximized().then((value) => { if (mounted) setMaximized(value); });
+    void invoke<boolean>("is_main_window_maximized").then((value) => { if (mounted) setMaximized(value); }).catch(() => undefined);
     return () => { mounted = false; };
   }, [isNative]);
-  const minimize = () => { if (isNative) void getCurrentWindow().minimize(); };
+  const minimize = () => { if (isNative) void invoke("minimize_main_window").catch(() => undefined); };
   const toggleMaximize = () => {
     if (!isNative) return;
-    const current = getCurrentWindow();
-    void current.toggleMaximize().then(() => current.isMaximized()).then(setMaximized);
+    void invoke<boolean>("toggle_main_window").then(setMaximized).catch(() => undefined);
   };
-  const close = () => { if (isNative) void getCurrentWindow().close(); };
+  const close = () => { if (isNative) void invoke("close_main_window").catch(() => undefined); };
   return <div className="window-bar">
     <div className="window-brand"><div className="window-brand-mark"><Sprout size={15} /></div><strong>成长温室</strong></div>
     <div className="window-drag-region" data-tauri-drag-region onDoubleClick={toggleMaximize} />
-    {isNative ? <div className="window-controls"><button onClick={minimize} title="最小化" aria-label="最小化"><Minus size={15} /></button><button onClick={toggleMaximize} title={maximized ? "还原" : "最大化"} aria-label={maximized ? "还原" : "最大化"}>{maximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}</button><button className="window-close" onClick={close} title="关闭" aria-label="关闭"><X size={15} /></button></div> : null}
+    {isNative ? <div className="window-controls"><button type="button" onClick={minimize} title="最小化" aria-label="最小化"><Minus size={15} /></button><button type="button" onClick={toggleMaximize} title={maximized ? "还原" : "最大化"} aria-label={maximized ? "还原" : "最大化"}>{maximized ? <Minimize2 size={13} /> : <Maximize2 size={13} />}</button><button type="button" className="window-close" onClick={close} title="关闭" aria-label="关闭"><X size={15} /></button></div> : null}
   </div>;
 }
 

@@ -2,6 +2,6 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Default permissions for the Growth Greenhouse windows",
-  "windows": ["main", "widget"],
+  "windows": ["main"],
   "permissions": ["core:default"]
 }
