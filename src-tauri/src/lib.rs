@@ -2,6 +2,7 @@ use rusqlite::Connection;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -87,17 +88,33 @@ fn read_patina_sessions(
     rows.collect::<Result<Vec<_>, _>>().map_err(|error| format!("解析 Patina 会话失败：{error}"))
 }
 
+#[tauri::command]
+fn select_patina_database(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    app.dialog()
+        .file()
+        .add_filter("Patina 数据库", &["db", "sqlite", "sqlite3"])
+        .blocking_pick_file()
+        .map(|file| {
+            file.into_path()
+                .map(|path| path.to_string_lossy().into_owned())
+                .map_err(|error| format!("无法读取所选数据库路径：{error}"))
+        })
+        .transpose()
+}
+
 pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             get_patina_source,
             read_patina_sessions,
+            select_patina_database,
             show_main_window,
             minimize_main_window,
             toggle_main_window,
             is_main_window_maximized,
             close_main_window,
         ])
+        .plugin(tauri_plugin_dialog::init())
         .run(tauri::generate_context!())
         .expect("error while running Growth Greenhouse");
 }

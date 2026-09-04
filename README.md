@@ -81,7 +81,7 @@ For study that happens in a browser, on paper, or outside the computer, use a ma
 ### Requirements
 
 - Windows 10 or Windows 11
-- Node.js 22.5 or newer, because the Vite development adapter uses `node:sqlite`
+- Node.js 20 or newer to build the desktop interface
 - [pnpm](https://pnpm.io/installation)
 - [Rust](https://www.rust-lang.org/tools/install) and the Tauri v2 prerequisites
 
@@ -94,14 +94,6 @@ pnpm install
 pnpm tauri:dev
 ```
 
-### Run The Browser Preview
-
-```powershell
-pnpm dev
-```
-
-The Vite development server listens on `127.0.0.1:1421` and exposes only the local read-only Patina adapter used by the browser preview. The native Tauri build calls the Rust adapter directly. Software usage statistics are available under the Data Source page.
-
 ### Build
 
 ```powershell
@@ -109,7 +101,9 @@ pnpm build
 pnpm tauri:build
 ```
 
-The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.2_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP. The repository keeps the browser preview source and local API configuration, while build output and personal Patina data remain ignored.
+The Windows NSIS installer is generated under `src-tauri/target/release/bundle/nsis/`, with a filename such as `成长温室_0.1.3_x64-setup.exe`. The installer defaults to Simplified Chinese and offers English at the start. For Patina, download the Windows `*_x64-setup.exe` installer from its GitHub Releases page rather than the Source code ZIP.
+
+This project supports the Windows application only and no longer maintains an independent browser preview. `src/`, `public/`, `index.html`, and Vite still remain because Tauri packages that interface into the desktop application. The browser-only Patina adapter is preserved as a minimal archive in `archive/web-preview-0.1.2`, with `v0.1.2` retained as the complete web-preview snapshot for future multi-platform work.
 
 ## Project Structure
 
@@ -118,7 +112,8 @@ src/App.tsx          Main greenhouse, garden, rewards, and settings UI
 src/Widget.tsx       Compact desktop widget view
 src/styles.css       Application and widget styling
 src-tauri/src/lib.rs Read-only Patina adapter and native commands
-vite.config.ts       Vite preview server and local Patina API
+vite.config.ts       Vite build configuration for the desktop interface
+archive/             Minimal archive of the former browser-preview adapter
 ```
 
 The code keeps the integration boundary small: Patina supplies read-only activity sessions, while Growth Greenhouse owns learning goals, manual records, growth, rewards, and presentation.

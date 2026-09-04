@@ -80,7 +80,7 @@ Patina 提供有效前台活动时长
 ### 环境要求
 
 - Windows 10 或 Windows 11
-- Node.js 22.5 或更新版本，因为 Vite 开发适配器使用 `node:sqlite`
+- Node.js 20 或更新版本，用于构建桌面界面
 - [pnpm](https://pnpm.io/installation)
 - [Rust](https://www.rust-lang.org/tools/install) 和 Tauri v2 所需环境
 
@@ -93,14 +93,6 @@ pnpm install
 pnpm tauri:dev
 ```
 
-### 运行浏览器预览
-
-```powershell
-pnpm dev
-```
-
-Vite 开发服务器只监听 `127.0.0.1:1421`，并提供浏览器预览使用的本地只读 Patina 适配器。Tauri 原生版本直接调用 Rust 适配器。软件使用统计位于“数据源”页面。
-
 ### 构建
 
 ```powershell
@@ -108,7 +100,9 @@ pnpm build
 pnpm tauri:build
 ```
 
-Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.2_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。仓库保留网页预览源码和本地接口配置，构建产物及个人 Patina 数据不会提交。
+Windows NSIS 安装包会生成在 `src-tauri/target/release/bundle/nsis/`，文件名为 `成长温室_0.1.3_x64-setup.exe`。安装程序默认优先使用简体中文，也可在安装开始时选择 English。使用 Patina 时，请从其 GitHub Releases 下载 Windows 的 `*_x64-setup.exe` 安装包，不要下载 Source code ZIP。
+
+当前只支持 Windows 软件，不再维护独立网页预览。`src/`、`public/`、`index.html` 和 Vite 构建配置仍会用于打包软件，不能删除；浏览器专用的 Patina 本地接口已最小化归档到 `archive/web-preview-0.1.2`，未来恢复多端时可与 `v0.1.2` 标签配合使用。
 
 ## 项目结构
 
@@ -117,7 +111,8 @@ src/App.tsx          温室、花园、奖励和设置界面
 src/Widget.tsx       桌面小组件视图
 src/styles.css       应用和小组件样式
 src-tauri/src/lib.rs Patina 只读适配器和原生命令
-vite.config.ts       Vite 预览服务器和本地 Patina API
+vite.config.ts       Windows 软件界面的 Vite 构建配置
+archive/             旧网页预览适配器的最小备份
 ```
 
 项目保持很小的集成边界：Patina 只提供只读活动会话，Growth Greenhouse 负责学习目标、手动记录、成长、奖励和界面展示。
